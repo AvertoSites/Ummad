@@ -1,7 +1,10 @@
+import { AppProviders } from "./providers";
+import { AppRoutes } from "./routes";
+
 export default function App() {
   return (
-    <main className="landing-word" aria-label="Umad">
-      Umad
-    </main>
+    <AppProviders>
+      <AppRoutes />
+    </AppProviders>
   );
 }
