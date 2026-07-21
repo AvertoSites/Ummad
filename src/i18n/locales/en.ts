@@ -225,20 +225,26 @@ const en = {
     // About Page (extended)
     aboutPage: {
       heroTitle: "Building Unity, Driving Progress",
-      heroDesc: "UMAD — Ururka Midnimada Adal — is an international NGO dedicated to empowering communities through sustainable development, education, healthcare, and economic growth.",
+      heroDesc:
+        "UMAD — Ururka Midnimada Adal — is an international NGO dedicated to empowering communities through sustainable development, education, healthcare, and economic growth.",
       valuesEyebrow: "What Guides Us",
       valuesTitle: "Our Core Values",
       value1Title: "Community First",
-      value1Desc: "Every decision we make is guided by the needs and wellbeing of the communities we serve, from rural Somalia to the diaspora abroad.",
+      value1Desc:
+        "Every decision we make is guided by the needs and wellbeing of the communities we serve, from rural Somalia to the diaspora abroad.",
       value2Title: "Transparency",
-      value2Desc: "We hold ourselves accountable to our donors, partners, and communities with open reporting on all our programs and finances.",
+      value2Desc:
+        "We hold ourselves accountable to our donors, partners, and communities with open reporting on all our programs and finances.",
       value3Title: "Unity Across Borders",
-      value3Desc: "UMAD bridges the gap between diaspora and homeland, turning shared identity into collective action and tangible impact.",
+      value3Desc:
+        "UMAD bridges the gap between diaspora and homeland, turning shared identity into collective action and tangible impact.",
       value4Title: "Innovation",
-      value4Desc: "We design solutions adapted to ground realities, embracing new approaches in agriculture, healthcare, education, and technology.",
+      value4Desc:
+        "We design solutions adapted to ground realities, embracing new approaches in agriculture, healthcare, education, and technology.",
       objectivesEyebrow: "Our Focus Areas",
       objectivesTitle: "Objectives",
-      objectivesDesc: "Given that the primary objective is poverty reduction, UMAD initiates, supports, and helps finance projects that address the most pressing needs of our communities:",
+      objectivesDesc:
+        "Given that the primary objective is poverty reduction, UMAD initiates, supports, and helps finance projects that address the most pressing needs of our communities:",
       obj1: "Ensure food security (agriculture and livestock farming) while serving as sources of income to lift families out of extreme poverty.",
       obj2: "Improve access to healthcare and education.",
       obj3: "Promote investment in small businesses for the exploitation of the region's natural resources (salt, fisheries, minerals, etc.).",
@@ -247,26 +253,34 @@ const en = {
       timelineEyebrow: "Our Journey",
       timelineTitle: "UMAD Through the Years",
       tl2015Title: "Founded in Somalia",
-      tl2015Desc: "A group of community leaders in the Adal region established UMAD to coordinate local development efforts.",
+      tl2015Desc:
+        "A group of community leaders in the Adal region established UMAD to coordinate local development efforts.",
       tl2018Title: "Ottawa Chapter Opens",
-      tl2018Desc: "The diaspora in Canada's capital organized, forming the Ottawa Chapter and launching the first cross-border fundraising campaigns.",
+      tl2018Desc:
+        "The diaspora in Canada's capital organized, forming the Ottawa Chapter and launching the first cross-border fundraising campaigns.",
       tl2019Title: "Washington Chapter Opens",
-      tl2019Desc: "Somali-American professionals in the DC area launched the Washington Chapter, adding an advocacy dimension to UMAD's work.",
+      tl2019Desc:
+        "Somali-American professionals in the DC area launched the Washington Chapter, adding an advocacy dimension to UMAD's work.",
       tl2021Title: "First Mobile Health Clinics",
-      tl2021Desc: "The Somalia Chapter launched its mobile health clinic program, reaching thousands of patients in remote villages.",
+      tl2021Desc:
+        "The Somalia Chapter launched its mobile health clinic program, reaching thousands of patients in remote villages.",
       tl2023Title: "Agricultural Program Launch",
-      tl2023Desc: "A major agricultural support initiative was launched, providing 500 farming families with seeds, tools, and training.",
+      tl2023Desc:
+        "A major agricultural support initiative was launched, providing 500 farming families with seeds, tools, and training.",
       tl2026Title: "Growing Impact",
-      tl2026Desc: "UMAD now serves over 50,000 people across Somalia and the diaspora, with more chapters planned for the future.",
+      tl2026Desc:
+        "UMAD now serves over 50,000 people across Somalia and the diaspora, with more chapters planned for the future.",
       ctaTitle: "Ready to Make a Difference?",
-      ctaDesc: "Explore our chapters, read our latest news, or get directly involved as a volunteer.",
+      ctaDesc:
+        "Explore our chapters, read our latest news, or get directly involved as a volunteer.",
       ctaNews: "Read Our News",
     },
     // Submit Article Page
     submitArticle: {
       eyebrow: "Share Your Story",
       title: "Submit an Article",
-      heroDesc: "Have a story, experience, or update from your chapter to share? Submit it here and — once approved by an admin — it will be featured on the UMAD news page.",
+      heroDesc:
+        "Have a story, experience, or update from your chapter to share? Submit it here and — once approved by an admin — it will be featured on the UMAD news page.",
       step1Title: "Submit Your Article",
       step1Desc: "Fill in the form with your story, photos, and details.",
       step2Title: "Admin Review",
@@ -274,7 +288,8 @@ const en = {
       step3Title: "Published on UMAD",
       step3Desc: "Approved articles go live on the UMAD news page.",
       successTitle: "Article Submitted!",
-      successDesc: "Thank you for your contribution. Your article has been received and will be reviewed by our admin team. You'll be notified at your email once it's approved and published.",
+      successDesc:
+        "Thank you for your contribution. Your article has been received and will be reviewed by our admin team. You'll be notified at your email once it's approved and published.",
       submitAnother: "Submit Another Article",
       yourInfo: "Your Information",
       fullName: "Full Name",
@@ -302,13 +317,17 @@ const en = {
       excerptHint: "(shown in news cards)",
       excerptPlaceholder: "1–2 sentences summarising your article…",
       fullArticle: "Full Article",
-      fullArticlePlaceholder: "Write your full article here. Use blank lines to separate paragraphs…",
+      fullArticlePlaceholder:
+        "Write your full article here. Use blank lines to separate paragraphs…",
       chars: "chars",
       guidelinesTitle: "Submission Guidelines",
-      guideline1: "Articles must be related to UMAD's mission or a chapter's activities.",
+      guideline1:
+        "Articles must be related to UMAD's mission or a chapter's activities.",
       guideline2: "Do not include defamatory, hateful, or misleading content.",
-      guideline3: "By submitting, you grant UMAD the right to publish and edit your article.",
-      guideline4: "Your email will only be used to notify you of the approval decision.",
+      guideline3:
+        "By submitting, you grant UMAD the right to publish and edit your article.",
+      guideline4:
+        "Your email will only be used to notify you of the approval decision.",
       submitBtn: "Submit Article for Review",
     },
   },
