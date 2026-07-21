@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar } from "lucide-react";
 import type { NewsArticle } from "../../data/news";
 import { formatDate } from "../../utils/format-date";
 

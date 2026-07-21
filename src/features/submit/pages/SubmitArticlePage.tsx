@@ -7,7 +7,6 @@ import {
   AlertCircle,
   FileText,
   User,
-  Mail,
   BookOpen,
   Image,
   Video,
@@ -418,8 +417,6 @@ export function SubmitArticlePage() {
                   <div className="flex gap-2">
                     {(["upload", "url"] as const).map((src) => {
                       const Icon = src === "upload" ? UploadCloud : Link2;
-                      const label =
-                        src === "upload" ? "Upload from device" : "Use URL";
                       return (
                         <button
                           key={src}

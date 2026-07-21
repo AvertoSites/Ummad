@@ -12,7 +12,6 @@ import {
   Stethoscope,
   Wheat,
   ShoppingBag,
-  ArrowRight,
 } from "lucide-react";
 
 const fadeUp = {
@@ -233,7 +232,7 @@ export function AboutPage() {
               const Icon = val.icon;
               return (
                 <motion.div
-                  key={val.title}
+                  key={val.titleKey}
                   custom={i}
                   initial="hidden"
                   whileInView="visible"
@@ -335,7 +334,7 @@ export function AboutPage() {
               const Icon = prog.icon;
               return (
                 <motion.div
-                  key={prog.title}
+                  key={prog.titleKey}
                   custom={i}
                   initial="hidden"
                   whileInView="visible"
