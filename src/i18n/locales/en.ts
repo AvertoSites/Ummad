@@ -218,6 +218,7 @@ const en = {
       close: "Close",
       search: "Search",
       filter: "Filter",
+      bilingualNotice: "This website is bilingual: English and Somali.",
       loading: "Loading...",
       notFound: "Page not found",
       backHome: "Back to Home",
