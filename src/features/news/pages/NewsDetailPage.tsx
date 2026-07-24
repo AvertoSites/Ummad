@@ -2,18 +2,26 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
-import { getArticleBySlug, newsArticles } from "../../../data/news";
+import { useNewsArticle, useNews } from "../hooks/useNews";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { formatDate } from "../../../utils/format-date";
 
 export function NewsDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
+  const { article, loading } = useNewsArticle(slug ?? "");
+  const { articles } = useNews();
 
-  const article = getArticleBySlug(slug ?? "");
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white pt-16 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
   if (!article) return <Navigate to="/news" replace />;
 
-  const related = newsArticles
+  const related = articles
     .filter((a) => a.id !== article.id && a.chapterId === article.chapterId)
     .slice(0, 3);
 

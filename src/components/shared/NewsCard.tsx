@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "lucide-react";
-import type { NewsArticle } from "../../data/news";
+import type { NewsArticleData as NewsArticle } from "../../features/news/services/news";
 import { formatDate } from "../../utils/format-date";
 
 interface NewsCardProps {
@@ -13,12 +13,18 @@ export function NewsCard({ article }: NewsCardProps) {
 
   return (
     <article className="group bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-      <div className="aspect-video overflow-hidden">
-        <img
-          src={article.image}
-          alt={article.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+      <div className="aspect-video overflow-hidden bg-slate-100">
+        {article.image ? (
+          <img
+            src={article.image}
+            alt={article.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Calendar size={28} className="text-slate-300" />
+          </div>
+        )}
       </div>
       <div className="p-5">
         <div className="flex items-center gap-2 mb-3">

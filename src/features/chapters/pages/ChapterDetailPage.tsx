@@ -7,9 +7,9 @@ import {
   TwitterIcon,
   InstagramIcon,
 } from "../../../components/shared/SocialIcons";
-import { getChapterBySlug } from "../../../data/chapters";
-import { getArticlesByChapter } from "../../../data/news";
-import { getEventsByChapter } from "../../../data/events";
+import { useChapterBySlug } from "../hooks/useChapters";
+import { useNews } from "../../news/hooks/useNews";
+import { useEvents } from "../../events/hooks/useEvents";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { EventCard } from "../../../components/shared/EventCard";
 
@@ -26,11 +26,21 @@ export function ChapterDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
 
-  const chapter = getChapterBySlug(slug ?? "");
+  const { chapter, loading } = useChapterBySlug(slug ?? "");
+  const { articles: allArticles } = useNews();
+  const { events: allEvents } = useEvents();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white pt-16 grid place-items-center">
+        <p className="text-sm text-slate-400 animate-pulse">Loading chapter…</p>
+      </div>
+    );
+  }
   if (!chapter) return <Navigate to="/chapters" replace />;
 
-  const chapterNews = getArticlesByChapter(chapter.id);
-  const chapterEvents = getEventsByChapter(chapter.id);
+  const chapterNews = allArticles.filter((a) => a.chapterId === chapter.id);
+  const chapterEvents = allEvents.filter((e) => e.chapterId === chapter.id);
 
   return (
     <div className="min-h-screen bg-white pt-16">
@@ -303,15 +313,6 @@ export function ChapterDetailPage() {
                     />
                     <span className="text-sm text-slate-600">
                       {chapter.phone}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <MapPin
-                      size={15}
-                      className="text-sky-600 mt-0.5 flex-shrink-0"
-                    />
-                    <span className="text-sm text-slate-600">
-                      {chapter.address}
                     </span>
                   </div>
                 </div>

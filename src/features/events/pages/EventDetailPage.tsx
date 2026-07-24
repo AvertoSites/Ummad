@@ -2,14 +2,21 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, MapPin, Users, Clock } from "lucide-react";
-import { getEventBySlug } from "../../../data/events";
+import { useEventBySlug } from "../hooks/useEvents";
 import { formatDate } from "../../../utils/format-date";
 
 export function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
+  const { event, loading } = useEventBySlug(slug ?? "");
 
-  const event = getEventBySlug(slug ?? "");
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white pt-16 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
   if (!event) return <Navigate to="/events" replace />;
 
   return (

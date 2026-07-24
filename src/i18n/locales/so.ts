@@ -219,7 +219,7 @@ const so = {
       search: "Baadh",
       filter: "Shaandhayn",
       bilingualNotice:
-        "Boggan wuxuu ku qoran yahay laba luqadood: Ingiriisi iyo Soomaali.",
+        "Boggan waa laba-luqadood (Ingiriisi iyo Soomaali). Si aad luqadda u beddesho: guji astaanta globe-ka ee kore midig. Mobile-ka, fur menu-ga kadibna dooro Language.",
       loading: "Waa la rarayo...",
       notFound: "Bogga lama helin",
       backHome: "Bogga Hore u Noqo",

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Calendar, MapPin, Users } from "lucide-react";
-import type { Event } from "../../data/events";
+import type { EventData as Event } from "../../features/events/services/events";
 import { formatDate } from "../../utils/format-date";
 
 interface EventCardProps {
@@ -13,12 +13,18 @@ export function EventCard({ event }: EventCardProps) {
 
   return (
     <article className="group bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-      <div className="aspect-video overflow-hidden relative">
-        <img
-          src={event.image}
-          alt={event.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+      <div className="aspect-video overflow-hidden relative bg-slate-100">
+        {event.image ? (
+          <img
+            src={event.image}
+            alt={event.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Calendar size={28} className="text-slate-300" />
+          </div>
+        )}
         {event.isFree && (
           <span className="absolute top-3 right-3 px-2.5 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
             Free

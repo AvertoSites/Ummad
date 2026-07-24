@@ -16,9 +16,9 @@ import {
   ShoppingBag,
   Mail,
 } from "lucide-react";
-import { chapters } from "../../../data/chapters";
-import { newsArticles } from "../../../data/news";
-import { events } from "../../../data/events";
+import { useChapters } from "../../chapters/hooks/useChapters";
+import { useNews } from "../hooks/useNews";
+import { useEvents } from "../../events/hooks/useEvents";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { EventCard } from "../../../components/shared/EventCard";
 import { ChapterCard } from "../../../components/shared/ChapterCard";
@@ -100,10 +100,13 @@ const programs = [
 
 export function HomePage() {
   const { t } = useTranslation();
+  const { chapters, loading: chaptersLoading } = useChapters();
+  const { articles, loading: newsLoading } = useNews();
+  const { events, loading: eventsLoading } = useEvents();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
-  const latestNews = newsArticles.slice(0, 3);
+  const latestNews = articles.slice(0, 3);
   const upcomingEvents = events.slice(0, 3);
 
   function handleSubscribe(e: React.FormEvent) {
@@ -372,19 +375,41 @@ export function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {chapters.map((chapter, i) => (
-              <motion.div
-                key={chapter.id}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-              >
-                <ChapterCard chapter={chapter} />
-              </motion.div>
-            ))}
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
+            {chaptersLoading ? (
+              [1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="bg-slate-100 rounded-2xl overflow-hidden animate-pulse"
+                >
+                  <div className="aspect-video bg-slate-200" />
+                  <div className="p-6 space-y-3">
+                    <div className="h-3 bg-slate-200 rounded w-1/3" />
+                    <div className="h-5 bg-slate-200 rounded w-3/4" />
+                    <div className="h-3 bg-slate-200 rounded w-full" />
+                  </div>
+                </div>
+              ))
+            ) : chapters.length === 0 ? (
+              <div className="col-span-full text-center py-16">
+                <p className="text-slate-400 font-medium">
+                  No chapters at this time — check back soon.
+                </p>
+              </div>
+            ) : (
+              chapters.map((chapter, i) => (
+                <motion.div
+                  key={chapter.id}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <ChapterCard chapter={chapter} />
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -416,18 +441,40 @@ export function HomePage() {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {latestNews.map((article, i) => (
-              <motion.div
-                key={article.id}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-              >
-                <NewsCard article={article} />
-              </motion.div>
-            ))}
+            {newsLoading ? (
+              [1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="bg-slate-100 rounded-xl overflow-hidden animate-pulse"
+                >
+                  <div className="aspect-video bg-slate-200" />
+                  <div className="p-5 space-y-2">
+                    <div className="h-3 bg-slate-200 rounded w-1/3" />
+                    <div className="h-4 bg-slate-200 rounded w-5/6" />
+                    <div className="h-3 bg-slate-200 rounded w-full" />
+                  </div>
+                </div>
+              ))
+            ) : latestNews.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-slate-400">
+                <p className="font-medium">
+                  No articles published yet — check back soon.
+                </p>
+              </div>
+            ) : (
+              latestNews.map((article, i) => (
+                <motion.div
+                  key={article.id}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <NewsCard article={article} />
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -459,18 +506,40 @@ export function HomePage() {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {upcomingEvents.map((event, i) => (
-              <motion.div
-                key={event.id}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-              >
-                <EventCard event={event} />
-              </motion.div>
-            ))}
+            {eventsLoading ? (
+              [1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="bg-slate-100 rounded-xl overflow-hidden animate-pulse"
+                >
+                  <div className="aspect-video bg-slate-200" />
+                  <div className="p-5 space-y-2">
+                    <div className="h-3 bg-slate-200 rounded w-1/3" />
+                    <div className="h-4 bg-slate-200 rounded w-5/6" />
+                    <div className="h-3 bg-slate-200 rounded w-full" />
+                  </div>
+                </div>
+              ))
+            ) : upcomingEvents.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-slate-400">
+                <p className="font-medium">
+                  No upcoming events — check back soon.
+                </p>
+              </div>
+            ) : (
+              upcomingEvents.map((event, i) => (
+                <motion.div
+                  key={event.id}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                >
+                  <EventCard event={event} />
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </section>

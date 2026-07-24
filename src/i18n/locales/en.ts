@@ -218,7 +218,8 @@ const en = {
       close: "Close",
       search: "Search",
       filter: "Filter",
-      bilingualNotice: "This website is bilingual: English and Somali.",
+      bilingualNotice:
+        "This website is bilingual (English and Somali). To change language: click the globe icon in the top-right. On mobile, open the menu and select Language.",
       loading: "Loading...",
       notFound: "Page not found",
       backHome: "Back to Home",

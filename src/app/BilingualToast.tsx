@@ -14,7 +14,7 @@ export function BilingualToast() {
 
     toast.info(t("general.bilingualNotice"), {
       toastId: TOAST_ID,
-      position: "top-center",
+      position: "bottom-right",
       autoClose: 6000,
       closeOnClick: true,
       pauseOnHover: true,

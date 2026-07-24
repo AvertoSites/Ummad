@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useSubmissions } from "../SubmissionsContext";
-import { chapters } from "../../../data/chapters";
+import { useChapters } from "../../chapters/hooks/useChapters";
 
 const CATEGORIES = [
   "Community",
@@ -56,10 +56,12 @@ const empty: FormState = {
 export function SubmitArticlePage() {
   const { t } = useTranslation();
   const { addSubmission } = useSubmissions();
+  const { chapters, loading: chaptersLoading } = useChapters();
 
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [mediaSource, setMediaSource] = useState<"upload" | "url" | "">("");
   const [mediaFile, setMediaFile] = useState<{
     file: File;
@@ -115,7 +117,7 @@ export function SubmitArticlePage() {
     return Object.keys(newErrors).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
 
@@ -132,22 +134,30 @@ export function SubmitArticlePage() {
           ? mediaFile?.previewUrl
           : form.mediaUrl.trim() || undefined
         : undefined;
-    addSubmission({
-      title: form.title.trim(),
-      excerpt: form.excerpt.trim(),
-      content: form.content.trim(),
-      authorName: form.authorName.trim(),
-      authorEmail: form.authorEmail.trim(),
-      chapterId: form.chapterId,
-      chapterName: chapter?.name ?? form.chapterId,
-      category: form.category,
-      imageUrl: resolvedImageUrl,
-      videoUrl: resolvedVideoUrl,
-    });
-    setSubmitted(true);
-    setForm(empty);
-    setMediaFile(null);
-    setMediaSource("");
+    setSubmitting(true);
+    try {
+      await addSubmission({
+        title: form.title.trim(),
+        excerpt: form.excerpt.trim(),
+        content: form.content.trim(),
+        authorName: form.authorName.trim(),
+        authorEmail: form.authorEmail.trim(),
+        chapterId: form.chapterId,
+        chapterName: chapter?.name ?? form.chapterId,
+        category: form.category,
+        ...(resolvedImageUrl && { imageUrl: resolvedImageUrl }),
+        ...(resolvedVideoUrl && { videoUrl: resolvedVideoUrl }),
+      });
+      setSubmitted(true);
+      setForm(empty);
+      setMediaFile(null);
+      setMediaSource("");
+    } catch (err) {
+      console.error("Submission failed:", err);
+      setErrors({ title: "Submission failed. Please try again." });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -312,13 +322,18 @@ export function SubmitArticlePage() {
                   <select
                     value={form.chapterId}
                     onChange={(e) => set("chapterId", e.target.value)}
+                    disabled={chaptersLoading}
                     className={`w-full px-4 py-2.5 rounded-xl border text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors ${
                       errors.chapterId
                         ? "border-red-400"
                         : "border-slate-200 hover:border-slate-300"
                     }`}
                   >
-                    <option value="">{t("submitArticle.selectChapter")}</option>
+                    <option value="">
+                      {chaptersLoading
+                        ? "Loading chapters…"
+                        : t("submitArticle.selectChapter")}
+                    </option>
                     {chapters.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -650,10 +665,11 @@ export function SubmitArticlePage() {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 py-3.5 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-xl transition-colors text-base"
+              disabled={submitting}
+              className="w-full flex items-center justify-center gap-2 py-3.5 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-xl transition-colors text-base disabled:opacity-70 disabled:cursor-not-allowed"
             >
               <Send size={18} />
-              {t("submitArticle.submitBtn")}
+              {submitting ? "Submitting…" : t("submitArticle.submitBtn")}
             </button>
           </form>
         )}
