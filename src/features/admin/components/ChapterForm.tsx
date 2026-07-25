@@ -79,6 +79,7 @@ export function ChapterForm({ initial, onSubmit, onCancel }: ChapterFormProps) {
   // Auto-generate slug from name only when creating (no initial)
   useEffect(() => {
     if (!initial) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlug(slugify(name));
     }
   }, [name, initial]);

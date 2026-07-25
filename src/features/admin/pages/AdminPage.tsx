@@ -20,6 +20,7 @@ import {
   FileText,
   House,
   ArrowLeft,
+  BarChart2,
 } from "lucide-react";
 import { formatDate } from "../../../utils/format-date";
 import {
@@ -55,13 +56,19 @@ import { ChapterForm } from "../components/ChapterForm";
 import { NewsForm } from "../components/NewsForm";
 import { EventForm } from "../components/EventForm";
 import { DeleteConfirmModal } from "../components/DeleteConfirmModal";
+import {
+  getSiteStats,
+  updateSiteStats,
+  type SiteStats,
+} from "../services/siteStats";
 
 type AdminSection =
   | "dashboard"
   | "news"
   | "events"
   | "chapters"
-  | "submissions";
+  | "submissions"
+  | "siteStats";
 
 const navItems: {
   key: AdminSection;
@@ -73,6 +80,7 @@ const navItems: {
   { key: "news", icon: Newspaper, labelKey: "admin.newsManagement" },
   { key: "events", icon: CalendarDays, labelKey: "admin.eventManagement" },
   { key: "chapters", icon: Building2, labelKey: "admin.chapterManagement" },
+  { key: "siteStats", icon: BarChart2, labelKey: "Site Stats" },
 ];
 
 export function AdminPage() {
@@ -207,6 +215,7 @@ export function AdminPage() {
           {activeSection === "news" && <NewsManagement t={t} />}
           {activeSection === "events" && <EventManagement t={t} />}
           {activeSection === "chapters" && <ChapterManagement t={t} />}
+          {activeSection === "siteStats" && <SiteStatsManagement />}
         </div>
       </div>
     </div>
@@ -380,6 +389,7 @@ function NewsManagement({ t: _t }: { t: (k: string) => string }) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
@@ -649,6 +659,7 @@ function EventManagement({ t: _t }: { t: (k: string) => string }) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
@@ -864,6 +875,7 @@ function ChapterManagement({ t: _t }: { t: (k: string) => string }) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, []);
 
@@ -1246,5 +1258,114 @@ function SubmissionsQueue({
         </div>
       )}
     </>
+  );
+}
+
+/* ─── Site Stats Management ─── */
+function SiteStatsManagement() {
+  const [form, setForm] = useState<SiteStats>({
+    volunteers: "",
+    projects: "",
+    people: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getSiteStats()
+      .then((data) => {
+        if (data) setForm(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setSaved(false);
+    try {
+      await updateSiteStats(form);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-lg">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-slate-900">Site Stats</h2>
+        <p className="text-sm text-slate-500 mt-1">
+          These values appear in the impact stats bar on the home page.
+          Countries Served is auto-calculated from your chapters.
+        </p>
+      </div>
+
+      <form
+        onSubmit={handleSave}
+        className="bg-white rounded-xl border border-slate-200 p-6 space-y-5"
+      >
+        {[
+          {
+            key: "volunteers" as keyof SiteStats,
+            label: "Volunteers",
+            placeholder: "e.g. 500+",
+          },
+          {
+            key: "projects" as keyof SiteStats,
+            label: "Projects Completed",
+            placeholder: "e.g. 40+",
+          },
+          {
+            key: "people" as keyof SiteStats,
+            label: "People Impacted",
+            placeholder: "e.g. 50k+",
+          },
+        ].map(({ key, label, placeholder }) => (
+          <div key={key}>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              {label}
+            </label>
+            <input
+              type="text"
+              value={form[key]}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, [key]: e.target.value }))
+              }
+              placeholder={placeholder}
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+        ))}
+
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-5 py-2.5 bg-sky-700 hover:bg-sky-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save Stats"}
+          </button>
+          {saved && (
+            <span className="text-sm text-green-600 font-medium flex items-center gap-1">
+              <CheckCircle size={15} /> Saved successfully
+            </span>
+          )}
+        </div>
+      </form>
+    </div>
   );
 }

@@ -3,20 +3,11 @@ import { Link, NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Menu, X, Globe, ChevronDown, MapPin, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useChapters } from "../../features/chapters/hooks/useChapters";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
   { code: "so", label: "Soomaali" },
-];
-
-const CHAPTERS = [
-  { slug: "ottawa", name: "Ottawa Chapter", location: "Ottawa, Canada" },
-  {
-    slug: "washington",
-    name: "Washington Chapter",
-    location: "Washington D.C., USA",
-  },
-  { slug: "somalia", name: "Somalia Chapter", location: "Somalia" },
 ];
 
 export function Navbar() {
@@ -24,6 +15,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [chaptersOpen, setChaptersOpen] = useState(false);
+  const { chapters } = useChapters();
 
   const navLinks = [
     { label: t("nav.home"), href: "/" },
@@ -119,26 +111,32 @@ export function Navbar() {
                           All →
                         </span>
                       </Link>
-                      {CHAPTERS.map((chapter) => (
-                        <Link
-                          key={chapter.slug}
-                          to={`/chapters/${chapter.slug}`}
-                          className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
-                        >
-                          <MapPin
-                            size={13}
-                            className="text-sky-500 mt-0.5 flex-shrink-0"
-                          />
-                          <div>
-                            <p className="text-sm font-medium text-slate-900">
-                              {chapter.name}
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              {chapter.location}
-                            </p>
-                          </div>
-                        </Link>
-                      ))}
+                      {chapters.length === 0 ? (
+                        <p className="px-4 py-3 text-xs text-slate-400 italic">
+                          No chapters yet
+                        </p>
+                      ) : (
+                        chapters.map((chapter) => (
+                          <Link
+                            key={chapter.id}
+                            to={`/chapters/${chapter.slug}`}
+                            className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors"
+                          >
+                            <MapPin
+                              size={13}
+                              className="text-sky-500 mt-0.5 flex-shrink-0"
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-slate-900">
+                                {chapter.name}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {chapter.location}
+                              </p>
+                            </div>
+                          </Link>
+                        ))
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -263,9 +261,9 @@ export function Navbar() {
                 >
                   All Chapters →
                 </Link>
-                {CHAPTERS.map((chapter) => (
+                {chapters.map((chapter) => (
                   <Link
-                    key={chapter.slug}
+                    key={chapter.id}
                     to={`/chapters/${chapter.slug}`}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-2 px-3 py-2.5 text-sm text-slate-700 hover:text-sky-700 hover:bg-slate-50 rounded-md transition-colors"

@@ -43,6 +43,7 @@ const en = {
         "Numbers that reflect our commitment to community empowerment",
       volunteers: "Volunteers",
       countries: "Countries Served",
+      chapters: "Active Chapters",
       projects: "Projects Completed",
       people: "People Impacted",
     },

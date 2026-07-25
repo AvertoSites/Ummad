@@ -8,7 +8,6 @@ export function useEvents() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     getEvents()
       .then((data) => {
         if (!cancelled) {
@@ -32,15 +31,13 @@ export function useEvents() {
 
 export function useEventBySlug(slug: string) {
   const [event, setEvent] = useState<EventData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(slug));
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
+    if (!slug) return;
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getEventBySlug(slug)
       .then((data) => {

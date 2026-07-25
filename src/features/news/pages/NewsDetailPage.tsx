@@ -37,7 +37,13 @@ export function NewsDetailPage() {
     <div className="min-h-screen bg-white pt-16">
       {/* Hero: video or image */}
       {article.videoUrl ? (
-        <div className="relative bg-slate-900" style={{ paddingTop: "56.25%" }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="relative bg-slate-900"
+          style={{ paddingTop: "56.25%" }}
+        >
           <iframe
             src={getEmbedUrl(article.videoUrl)}
             title={article.title}
@@ -45,12 +51,15 @@ export function NewsDetailPage() {
             allowFullScreen
             className="absolute inset-0 w-full h-full"
           />
-        </div>
+        </motion.div>
       ) : (
         <div className="relative h-64 sm:h-96 overflow-hidden">
-          <img
+          <motion.img
             src={article.image}
             alt={article.title}
+            initial={{ scale: 1.08, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
@@ -128,12 +137,26 @@ export function NewsDetailPage() {
       {related.length > 0 && (
         <section className="py-14 bg-slate-50 border-t border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl font-extrabold text-slate-900 mb-8">
+            <motion.h2
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="text-2xl font-extrabold text-slate-900 mb-8"
+            >
               {t("news.relatedNews")}
-            </h2>
+            </motion.h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {related.map((rel) => (
-                <NewsCard key={rel.id} article={rel} />
+              {related.map((rel, i) => (
+                <motion.div
+                  key={rel.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.45, delay: i * 0.1 }}
+                >
+                  <NewsCard article={rel} />
+                </motion.div>
               ))}
             </div>
           </div>

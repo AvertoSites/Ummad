@@ -22,14 +22,11 @@ export function useChapters() {
 
 export function useChapterBySlug(slug: string) {
   const [chapter, setChapter] = useState<ChapterData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(slug));
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
+    if (!slug) return;
     getChapterBySlug(slug)
       .then(setChapter)
       .catch(() => setError("Failed to load chapter."))

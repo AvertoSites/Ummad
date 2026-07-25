@@ -44,6 +44,7 @@ export function NewsForm({ initial, onSubmit, onCancel }: NewsFormProps) {
 
   // Auto-generate slug from title only for new articles
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!initial) setSlug(slugify(title));
   }, [title, initial]);
 

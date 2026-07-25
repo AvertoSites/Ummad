@@ -42,6 +42,7 @@ const so = {
       description: "Tirooyinka ka muujinaya xillisnimadayada xoojinta bulshada",
       volunteers: "Iskaa Wax u Qabtayaasha",
       countries: "Wadamada La Adeegay",
+      chapters: "Xarumaha Firfircoon",
       projects: "Mashaariicda La Dhameeyay",
       people: "Dadka La Gaaray",
     },

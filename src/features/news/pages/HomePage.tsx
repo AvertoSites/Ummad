@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -14,7 +13,6 @@ import {
   TreePine,
   Lightbulb,
   ShoppingBag,
-  Mail,
 } from "lucide-react";
 import { useChapters } from "../../chapters/hooks/useChapters";
 import { useNews } from "../hooks/useNews";
@@ -32,32 +30,6 @@ const fadeUp = {
   }),
 };
 
-const impactStats = [
-  {
-    value: "500+",
-    labelKey: "impact.volunteers",
-    icon: Users,
-    color: "text-sky-600",
-  },
-  {
-    value: "3",
-    labelKey: "impact.countries",
-    icon: Globe,
-    color: "text-green-600",
-  },
-  {
-    value: "40+",
-    labelKey: "impact.projects",
-    icon: CheckCircle,
-    color: "text-amber-600",
-  },
-  {
-    value: "50k+",
-    labelKey: "impact.people",
-    icon: Heart,
-    color: "text-rose-600",
-  },
-];
 
 const programs = [
   {
@@ -103,19 +75,15 @@ export function HomePage() {
   const { chapters, loading: chaptersLoading } = useChapters();
   const { articles, loading: newsLoading } = useNews();
   const { events, loading: eventsLoading } = useEvents();
-  const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
-
   const latestNews = articles.slice(0, 3);
   const upcomingEvents = events.slice(0, 3);
 
-  function handleSubscribe(e: React.FormEvent) {
-    e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setEmail("");
-    }
-  }
+  const impactStats = [
+    { value: "500+",  labelKey: "impact.volunteers", icon: Users,       color: "text-sky-600" },
+    { value: String(chapters.length), labelKey: "impact.chapters", icon: Globe, color: "text-green-600" },
+    { value: "40+",   labelKey: "impact.projects",   icon: CheckCircle, color: "text-amber-600" },
+    { value: "50k+",  labelKey: "impact.people",     icon: Heart,       color: "text-rose-600" },
+  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -160,16 +128,16 @@ export function HomePage() {
               className="flex flex-wrap gap-4"
             >
               <Link
-                to="/#about"
+                to="/about"
                 className="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition-colors"
               >
                 {t("hero.ctaLearnMore")}
               </Link>
               <Link
-                to="/#get-involved"
+                to="/news"
                 className="px-6 py-3 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl transition-colors"
               >
-                {t("hero.ctaJoinUs")}
+                {t("news.viewAll")}
               </Link>
               <Link
                 to="/chapters"
@@ -291,7 +259,7 @@ export function HomePage() {
                   <CheckCircle size={20} className="text-green-700" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-900">Est. 2015</p>
+                  <p className="text-sm font-bold text-slate-900">Est. 2026</p>
                   <p className="text-xs text-slate-500">
                     Serving communities globally
                   </p>
@@ -583,48 +551,7 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── NEWSLETTER ── */}
-      <section className="py-16 bg-slate-50 border-t border-slate-200">
-        <div className="max-w-2xl mx-auto px-4 text-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <Mail size={36} className="text-sky-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-extrabold text-slate-900 mb-3">
-              {t("newsletter.title")}
-            </h2>
-            <p className="text-slate-500 mb-7">{t("newsletter.description")}</p>
-            {subscribed ? (
-              <p className="text-green-600 font-semibold">
-                {t("newsletter.success")}
-              </p>
-            ) : (
-              <form
-                onSubmit={handleSubscribe}
-                className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
-              >
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={t("newsletter.placeholder")}
-                  required
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-xl transition-colors text-sm whitespace-nowrap"
-                >
-                  {t("newsletter.subscribe")}
-                </button>
-              </form>
-            )}
-          </motion.div>
-        </div>
-      </section>
+
     </div>
   );
 }

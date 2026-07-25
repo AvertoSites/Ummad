@@ -23,13 +23,21 @@ export function EventDetailPage() {
     <div className="min-h-screen bg-white pt-16">
       {/* Hero */}
       <div className="relative h-64 sm:h-96 overflow-hidden">
-        <img
+        <motion.img
           src={event.image}
           alt={event.title}
+          initial={{ scale: 1.08, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="absolute bottom-0 left-0 right-0 p-6 sm:p-10"
+        >
           <div className="max-w-4xl mx-auto">
             <Link
               to="/events"
@@ -54,7 +62,7 @@ export function EventDetailPage() {
               {event.title}
             </h1>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Content */}

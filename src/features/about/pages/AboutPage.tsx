@@ -91,31 +91,6 @@ const programs = [
 
 const timeline = [
   {
-    year: "2015",
-    titleKey: "aboutPage.tl2015Title",
-    descKey: "aboutPage.tl2015Desc",
-  },
-  {
-    year: "2018",
-    titleKey: "aboutPage.tl2018Title",
-    descKey: "aboutPage.tl2018Desc",
-  },
-  {
-    year: "2019",
-    titleKey: "aboutPage.tl2019Title",
-    descKey: "aboutPage.tl2019Desc",
-  },
-  {
-    year: "2021",
-    titleKey: "aboutPage.tl2021Title",
-    descKey: "aboutPage.tl2021Desc",
-  },
-  {
-    year: "2023",
-    titleKey: "aboutPage.tl2023Title",
-    descKey: "aboutPage.tl2023Desc",
-  },
-  {
     year: "2026",
     titleKey: "aboutPage.tl2026Title",
     descKey: "aboutPage.tl2026Desc",

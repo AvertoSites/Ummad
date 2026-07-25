@@ -8,7 +8,16 @@ const fadeUp = {
   visible: (i = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, delay: i * 0.1 },
+    transition: { duration: 0.45, delay: i * 0.1, ease: "easeOut" as const },
+  }),
+};
+
+const headerVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, delay: i * 0.12, ease: "easeOut" as const },
   }),
 };
 
@@ -19,27 +28,31 @@ export function ChaptersPage() {
   return (
     <div className="min-h-screen bg-white pt-16">
       {/* Page Header */}
-      <div className="bg-gradient-to-r from-sky-700 to-sky-900 text-white py-16">
+      <div className="bg-gradient-to-r from-sky-700 to-sky-900 text-white py-16 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
+            custom={0}
+            initial="hidden"
+            animate="visible"
+            variants={headerVariants}
             className="text-sky-300 text-sm font-semibold uppercase tracking-wider mb-3"
           >
             {t("chapters.eyebrow")}
           </motion.p>
           <motion.h1
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            custom={1}
+            initial="hidden"
+            animate="visible"
+            variants={headerVariants}
             className="text-3xl sm:text-5xl font-extrabold mb-4"
           >
             {t("chapters.title")}
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            custom={2}
+            initial="hidden"
+            animate="visible"
+            variants={headerVariants}
             className="text-sky-200 max-w-2xl mx-auto text-lg"
           >
             {t("chapters.description")}
@@ -68,7 +81,12 @@ export function ChaptersPage() {
               ))}
             </div>
           ) : chapters.length === 0 ? (
-            <div className="text-center py-24">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="text-center py-24"
+            >
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-sky-50 mb-5">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -92,7 +110,7 @@ export function ChaptersPage() {
                 Our chapters will appear here once they are added. Check back
                 soon.
               </p>
-            </div>
+            </motion.div>
           ) : (
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
               {chapters.map((chapter, i) => (
@@ -100,8 +118,10 @@ export function ChaptersPage() {
                   key={chapter.id}
                   custom={i}
                   initial="hidden"
-                  animate="visible"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-60px" }}
                   variants={fadeUp}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
                 >
                   <ChapterCard chapter={chapter} />
                 </motion.div>

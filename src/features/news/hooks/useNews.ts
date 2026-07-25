@@ -13,7 +13,6 @@ export function useNews() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     getNewsArticles()
       .then((data) => {
         if (!cancelled) {
@@ -37,15 +36,13 @@ export function useNews() {
 
 export function useNewsArticle(slug: string) {
   const [article, setArticle] = useState<NewsArticleData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(slug));
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      return;
-    }
+    if (!slug) return;
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getNewsArticleBySlug(slug)
       .then((data) => {

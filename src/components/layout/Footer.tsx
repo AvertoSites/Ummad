@@ -6,23 +6,20 @@ import {
   TwitterIcon,
   InstagramIcon,
 } from "../shared/SocialIcons";
+import { useChapters } from "../../features/chapters/hooks/useChapters";
 
 export function Footer() {
   const { t } = useTranslation();
+  const { chapters } = useChapters();
 
   const quickLinks = [
     { label: t("nav.home"), href: "/" },
     { label: t("nav.about"), href: "/#about" },
-    { label: t("nav.programs"), href: "/#programs" },
     { label: t("news.viewAll"), href: "/news" },
     { label: t("events.viewAll"), href: "/events" },
   ];
 
-  const chapterLinks = [
-    { label: "Ottawa Chapter", href: "/chapters/ottawa" },
-    { label: "Washington Chapter", href: "/chapters/washington" },
-    { label: "Somalia Chapter", href: "/chapters/somalia" },
-  ];
+  const featuredChapters = chapters.slice(0, 3);
 
   return (
     <footer className="bg-slate-900 text-slate-300" id="contact">
@@ -30,9 +27,9 @@ export function Footer() {
       <div className="h-1 bg-gradient-to-r from-sky-600 via-green-500 to-amber-500" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
           {/* Brand column */}
-          <div className="lg:col-span-1">
+          <div className="col-span-2 lg:col-span-1">
             <Link to="/" className="flex items-center gap-3 mb-4">
               <img
                 src="/images/logo.png"
@@ -75,24 +72,26 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Chapters */}
-          <div>
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
-              {t("footer.chapters")}
-            </h3>
-            <ul className="space-y-2.5">
-              {chapterLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-slate-400 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Chapters — only rendered when at least one exists */}
+          {featuredChapters.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
+                {t("footer.chapters")}
+              </h3>
+              <ul className="space-y-2.5">
+                {featuredChapters.map((chapter) => (
+                  <li key={chapter.id}>
+                    <Link
+                      to={`/chapters/${chapter.slug}`}
+                      className="text-sm text-slate-400 hover:text-white transition-colors"
+                    >
+                      {chapter.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Contact */}
           <div>
@@ -118,15 +117,20 @@ export function Footer() {
                   +1 (613) 555-0199
                 </span>
               </li>
-              <li className="flex items-start gap-2.5">
-                <MapPin
-                  size={15}
-                  className="text-sky-400 mt-0.5 flex-shrink-0"
-                />
-                <span className="text-sm text-slate-400">
-                  Ottawa, Canada · Washington D.C., USA · Somalia
-                </span>
-              </li>
+              {chapters.length > 0 && (
+                <li className="flex items-start gap-2.5">
+                  <MapPin
+                    size={15}
+                    className="text-sky-400 mt-0.5 flex-shrink-0"
+                  />
+                  <span className="text-sm text-slate-400 break-words">
+                    {chapters
+                      .slice(0, 3)
+                      .map((c) => c.location)
+                      .join(" · ")}
+                  </span>
+                </li>
+              )}
             </ul>
             {/* Social links */}
             <div className="flex items-center gap-3 mt-5">
