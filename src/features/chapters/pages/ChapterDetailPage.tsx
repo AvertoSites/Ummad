@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -12,6 +13,7 @@ import { useNews } from "../../news/hooks/useNews";
 import { useEvents } from "../../events/hooks/useEvents";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { EventCard } from "../../../components/shared/EventCard";
+import { trackChapterView } from "../../../lib/analytics";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -29,6 +31,12 @@ export function ChapterDetailPage() {
   const { chapter, loading } = useChapterBySlug(slug ?? "");
   const { articles: allArticles } = useNews();
   const { events: allEvents } = useEvents();
+
+  useEffect(() => {
+    if (chapter) {
+      trackChapterView({ slug: slug ?? "", name: chapter.name });
+    }
+  }, [chapter, slug]);
 
   if (loading) {
     return (

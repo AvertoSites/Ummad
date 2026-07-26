@@ -102,10 +102,10 @@ export function Footer() {
               <li className="flex items-start gap-2.5">
                 <Mail size={15} className="text-sky-400 mt-0.5 flex-shrink-0" />
                 <a
-                  href="mailto:info@umad.org"
+                  href="mailto:info.ummad26@gmail.com"
                   className="text-sm text-slate-400 hover:text-white transition-colors"
                 >
-                  info@umad.org
+                  info.ummad26@gmail.com
                 </a>
               </li>
               <li className="flex items-start gap-2.5">

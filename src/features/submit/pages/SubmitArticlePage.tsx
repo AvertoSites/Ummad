@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useSubmissions } from "../SubmissionsContext";
 import { useChapters } from "../../chapters/hooks/useChapters";
+import { trackArticleSubmit } from "../../../lib/analytics";
 
 const CATEGORIES = [
   "Community",
@@ -68,6 +69,14 @@ export function SubmitArticlePage() {
     previewUrl: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formStarted, setFormStarted] = useState(false);
+
+  function handleFormFocus() {
+    if (!formStarted) {
+      setFormStarted(true);
+      trackArticleSubmit("started");
+    }
+  }
 
   // Clean up object URL when component unmounts or file changes
   useEffect(() => {
@@ -152,9 +161,11 @@ export function SubmitArticlePage() {
       setForm(empty);
       setMediaFile(null);
       setMediaSource("");
+      trackArticleSubmit("submitted");
     } catch (err) {
       console.error("Submission failed:", err);
       setErrors({ title: "Submission failed. Please try again." });
+      trackArticleSubmit("error");
     } finally {
       setSubmitting(false);
     }
@@ -260,7 +271,7 @@ export function SubmitArticlePage() {
             </div>
           </motion.div>
         ) : (
-          <form onSubmit={handleSubmit} noValidate className="space-y-8">
+          <form onSubmit={handleSubmit} onFocus={handleFormFocus} noValidate className="space-y-8">
             {/* Author info */}
             <fieldset className="space-y-5">
               <legend className="flex items-center gap-2 text-base font-bold text-slate-900 mb-4">

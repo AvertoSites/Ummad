@@ -21,13 +21,16 @@ import {
   House,
   ArrowLeft,
   BarChart2,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { formatDate } from "../../../utils/format-date";
 import {
   useSubmissions,
   type Submission,
 } from "../../submit/SubmissionsContext";
-import { signOut } from "../services/auth";
+import { signOut, changePassword } from "../services/auth";
 import {
   getChapters,
   createChapter,
@@ -68,7 +71,8 @@ type AdminSection =
   | "events"
   | "chapters"
   | "submissions"
-  | "siteStats";
+  | "siteStats"
+  | "changePassword";
 
 const navItems: {
   key: AdminSection;
@@ -81,6 +85,7 @@ const navItems: {
   { key: "events", icon: CalendarDays, labelKey: "admin.eventManagement" },
   { key: "chapters", icon: Building2, labelKey: "admin.chapterManagement" },
   { key: "siteStats", icon: BarChart2, labelKey: "Site Stats" },
+  { key: "changePassword", icon: KeyRound, labelKey: "Change Password" },
 ];
 
 export function AdminPage() {
@@ -216,6 +221,7 @@ export function AdminPage() {
           {activeSection === "events" && <EventManagement t={t} />}
           {activeSection === "chapters" && <ChapterManagement t={t} />}
           {activeSection === "siteStats" && <SiteStatsManagement />}
+          {activeSection === "changePassword" && <ChangePasswordSection />}
         </div>
       </div>
     </div>
@@ -1364,6 +1370,195 @@ function SiteStatsManagement() {
               <CheckCircle size={15} /> Saved successfully
             </span>
           )}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* ─── Change Password ─── */
+function ChangePasswordSection() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
+
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      if (
+        code === "auth/wrong-password" ||
+        code === "auth/invalid-credential"
+      ) {
+        setError("Current password is incorrect.");
+      } else if (code === "auth/too-many-requests") {
+        setError("Too many attempts. Please wait a moment and try again.");
+      } else {
+        setError("Failed to change password. Please try again.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  type PasswordFieldProps = {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    show: boolean;
+    onToggle: () => void;
+    autoComplete: string;
+    placeholder: string;
+  };
+
+  function PasswordField({
+    id,
+    label,
+    value,
+    onChange,
+    show,
+    onToggle,
+    autoComplete,
+    placeholder,
+  }: PasswordFieldProps) {
+    return (
+      <div>
+        <label
+          htmlFor={id}
+          className="block text-sm font-semibold text-slate-700 mb-1.5"
+        >
+          {label}
+        </label>
+        <div className="relative">
+          <KeyRound
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            id={id}
+            type={show ? "text" : "password"}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            required
+            autoComplete={autoComplete}
+            placeholder={placeholder}
+            className="w-full pl-9 pr-10 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+          />
+          <button
+            type="button"
+            onClick={onToggle}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            aria-label={show ? "Hide password" : "Show password"}
+          >
+            {show ? <EyeOff size={15} /> : <Eye size={15} />}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-lg">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-slate-900">Change Password</h2>
+        <p className="text-sm text-slate-500 mt-1">
+          You must confirm your current password before setting a new one. Your
+          session will remain active after the change.
+        </p>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white rounded-xl border border-slate-200 p-6 space-y-5"
+      >
+        <PasswordField
+          id="admin-current-password"
+          label="Current Password"
+          value={currentPassword}
+          onChange={setCurrentPassword}
+          show={showCurrent}
+          onToggle={() => setShowCurrent((v) => !v)}
+          autoComplete="current-password"
+          placeholder="Enter your current password"
+        />
+
+        <hr className="border-slate-100" />
+
+        <PasswordField
+          id="admin-new-password"
+          label="New Password"
+          value={newPassword}
+          onChange={setNewPassword}
+          show={showNew}
+          onToggle={() => setShowNew((v) => !v)}
+          autoComplete="new-password"
+          placeholder="Minimum 8 characters"
+        />
+
+        <PasswordField
+          id="admin-confirm-password"
+          label="Confirm New Password"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          show={showConfirm}
+          onToggle={() => setShowConfirm((v) => !v)}
+          autoComplete="new-password"
+          placeholder="Re-enter new password"
+        />
+
+        {error && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+            <XCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="flex items-start gap-2 bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+            <CheckCircle
+              size={16}
+              className="text-green-600 flex-shrink-0 mt-0.5"
+            />
+            <p className="text-sm text-green-700 font-medium">
+              Password changed successfully!
+            </p>
+          </div>
+        )}
+
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-5 py-2.5 bg-sky-700 hover:bg-sky-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? "Updating…" : "Update Password"}
+          </button>
         </div>
       </form>
     </div>

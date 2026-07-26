@@ -535,7 +535,7 @@ export function HomePage() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <a
-                href="mailto:info@umad.org"
+                href="mailto:info.ummad26@gmail.com"
                 className="px-7 py-3 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-colors"
               >
                 {t("involved.contact")}

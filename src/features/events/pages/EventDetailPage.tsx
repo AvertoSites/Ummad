@@ -1,14 +1,26 @@
+import { useEffect } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, MapPin, Users, Clock } from "lucide-react";
 import { useEventBySlug } from "../hooks/useEvents";
 import { formatDate } from "../../../utils/format-date";
+import { trackEventView } from "../../../lib/analytics";
 
 export function EventDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
   const { event, loading } = useEventBySlug(slug ?? "");
+
+  useEffect(() => {
+    if (event) {
+      trackEventView({
+        slug: slug ?? "",
+        title: event.title,
+        date: event.date,
+      });
+    }
+  }, [event, slug]);
 
   if (loading) {
     return (

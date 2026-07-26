@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -5,12 +6,23 @@ import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
 import { useNewsArticle, useNews } from "../hooks/useNews";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { formatDate } from "../../../utils/format-date";
+import { trackArticleView } from "../../../lib/analytics";
 
 export function NewsDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { t } = useTranslation();
   const { article, loading } = useNewsArticle(slug ?? "");
   const { articles } = useNews();
+
+  useEffect(() => {
+    if (article) {
+      trackArticleView({
+        slug: article.slug ?? slug ?? "",
+        title: article.title,
+        category: article.category,
+      });
+    }
+  }, [article, slug]);
 
   if (loading) {
     return (
