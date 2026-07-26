@@ -26,6 +26,7 @@ export interface Submission {
   category: string;
   submittedAt: string;
   status: "pending" | "approved" | "rejected";
+  rejectionReason?: string;
 }
 
 interface SubmissionsContextValue {
@@ -34,7 +35,11 @@ interface SubmissionsContextValue {
   addSubmission: (
     data: Omit<Submission, "id" | "submittedAt" | "status">,
   ) => Promise<void>;
-  updateStatus: (id: string, status: Submission["status"]) => Promise<void>;
+  updateStatus: (
+    id: string,
+    status: Submission["status"],
+    rejectionReason?: string,
+  ) => Promise<void>;
 }
 
 const SubmissionsContext = createContext<SubmissionsContextValue | null>(null);
@@ -57,10 +62,16 @@ export function SubmissionsProvider({ children }: PropsWithChildren) {
     setSubmissions((prev) => [newSub, ...prev]);
   }
 
-  async function updateStatus(id: string, status: Submission["status"]) {
-    await updateSubmissionStatus(id, status);
+  async function updateStatus(
+    id: string,
+    status: Submission["status"],
+    rejectionReason?: string,
+  ) {
+    await updateSubmissionStatus(id, status, rejectionReason);
     setSubmissions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status } : s)),
+      prev.map((s) =>
+        s.id === id ? { ...s, status, rejectionReason } : s,
+      ),
     );
   }
 

@@ -24,6 +24,7 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  MessageSquare,
 } from "lucide-react";
 import { formatDate } from "../../../utils/format-date";
 import {
@@ -64,6 +65,10 @@ import {
   updateSiteStats,
   type SiteStats,
 } from "../services/siteStats";
+import {
+  sendApprovalEmail,
+  sendRejectionEmail,
+} from "../../../lib/email";
 
 type AdminSection =
   | "dashboard"
@@ -1037,13 +1042,21 @@ function SubmissionsQueue({
 }: {
   submissions: Submission[];
   loading: boolean;
-  updateStatus: (id: string, status: Submission["status"]) => Promise<void>;
+  updateStatus: (
+    id: string,
+    status: Submission["status"],
+    rejectionReason?: string,
+  ) => Promise<void>;
   createNews: (input: NewsInput) => Promise<string>;
 }) {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [editingSubmission, setEditingSubmission] = useState<Submission | null>(
     null,
   );
+  // rejection reason state: maps submission id → reason text
+  // null = panel closed, string (even empty) = panel open
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const pending = submissions.filter((s) => s.status === "pending");
   const reviewed = submissions.filter((s) => s.status !== "pending");
@@ -1065,6 +1078,12 @@ function SubmissionsQueue({
         status: "published",
       });
       await updateStatus(sub.id, "approved");
+      // Email the submitter
+      sendApprovalEmail({
+        authorName: sub.authorName,
+        authorEmail: sub.authorEmail,
+        title: sub.title,
+      }).catch(console.error);
     } finally {
       setApprovingId(null);
     }
@@ -1076,7 +1095,43 @@ function SubmissionsQueue({
     try {
       await createNews({ ...input, status: "published" });
       await updateStatus(editingSubmission.id, "approved");
+      // Email the submitter
+      sendApprovalEmail({
+        authorName: editingSubmission.authorName,
+        authorEmail: editingSubmission.authorEmail,
+        title: editingSubmission.title,
+      }).catch(console.error);
       setEditingSubmission(null);
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  function openRejectPanel(id: string) {
+    setRejectingId(id);
+    setRejectionReason("");
+  }
+
+  function closeRejectPanel() {
+    setRejectingId(null);
+    setRejectionReason("");
+  }
+
+  async function handleConfirmReject(sub: Submission) {
+    setApprovingId(sub.id);
+    try {
+      const reason = rejectionReason.trim();
+      await updateStatus(sub.id, "rejected", reason || undefined);
+      // Email the submitter with the reason
+      sendRejectionEmail(
+        {
+          authorName: sub.authorName,
+          authorEmail: sub.authorEmail,
+          title: sub.title,
+        },
+        reason,
+      ).catch(console.error);
+      closeRejectPanel();
     } finally {
       setApprovingId(null);
     }
@@ -1131,13 +1186,20 @@ function SubmissionsQueue({
                           {sub.title}
                         </h3>
                         <p className="text-xs text-slate-400 mt-0.5">
-                          by {sub.authorName} · {formatDate(sub.submittedAt)}
+                          by {sub.authorName} ·{" "}
+                          <a
+                            href={`mailto:${sub.authorEmail}`}
+                            className="text-sky-600 hover:underline"
+                          >
+                            {sub.authorEmail}
+                          </a>{" "}
+                          · {formatDate(sub.submittedAt)}
                         </p>
                       </div>
                       <div className="flex gap-2 flex-shrink-0 flex-wrap">
                         <button
                           onClick={() => handleDirectApprove(sub)}
-                          disabled={!!approvingId}
+                          disabled={!!approvingId || rejectingId === sub.id}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 disabled:opacity-60 transition-colors"
                         >
                           <CheckCircle size={13} />
@@ -1145,17 +1207,26 @@ function SubmissionsQueue({
                         </button>
                         <button
                           onClick={() => setEditingSubmission(sub)}
-                          disabled={!!approvingId}
+                          disabled={!!approvingId || rejectingId === sub.id}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-700 text-white text-xs font-semibold rounded-lg hover:bg-sky-800 disabled:opacity-60 transition-colors"
                         >
                           <Pencil size={13} /> Edit &amp; Approve
                         </button>
                         <button
-                          onClick={() => updateStatus(sub.id, "rejected")}
+                          onClick={() =>
+                            rejectingId === sub.id
+                              ? closeRejectPanel()
+                              : openRejectPanel(sub.id)
+                          }
                           disabled={!!approvingId}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 disabled:opacity-60 transition-colors"
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-60 ${
+                            rejectingId === sub.id
+                              ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                              : "bg-red-600 text-white hover:bg-red-700"
+                          }`}
                         >
-                          <XCircle size={13} /> Reject
+                          <XCircle size={13} />
+                          {rejectingId === sub.id ? "Cancel" : "Reject"}
                         </button>
                       </div>
                     </div>
@@ -1170,6 +1241,46 @@ function SubmissionsQueue({
                         {sub.content}
                       </div>
                     </details>
+
+                    {/* ── Rejection reason panel ── */}
+                    {rejectingId === sub.id && (
+                      <div className="mt-4 pt-4 border-t border-red-100 bg-red-50 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-red-700">
+                          <MessageSquare size={15} />
+                          <p className="text-sm font-semibold">
+                            Reason for rejection
+                            <span className="font-normal text-red-500 ml-1">
+                              (optional — sent to {sub.authorEmail})
+                            </span>
+                          </p>
+                        </div>
+                        <textarea
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                          rows={3}
+                          placeholder="e.g. The article does not meet our content guidelines. Please revise and resubmit."
+                          className="w-full px-3 py-2.5 border border-red-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-400 bg-white resize-none"
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleConfirmReject(sub)}
+                            disabled={!!approvingId}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 disabled:opacity-60 transition-colors"
+                          >
+                            <XCircle size={13} />
+                            {approvingId === sub.id
+                              ? "Rejecting…"
+                              : "Confirm Reject & Notify"}
+                          </button>
+                          <button
+                            onClick={closeRejectPanel}
+                            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

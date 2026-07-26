@@ -60,9 +60,11 @@ export async function addSubmissionToFirestore(
 export async function updateSubmissionStatus(
   id: string,
   status: Submission["status"],
+  rejectionReason?: string,
 ): Promise<void> {
   await updateDoc(doc(db, SUB_COL, id), {
     status,
     updatedAt: serverTimestamp(),
+    ...(rejectionReason ? { rejectionReason } : {}),
   });
 }
