@@ -17,3 +17,15 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+/**
+ * Creates a temporary secondary Firebase app instance.
+ * Used to create new Auth users without signing the current admin out.
+ * The caller is responsible for calling deleteApp(secondaryApp) when done.
+ */
+export function createSecondaryApp() {
+  const secondaryAppName = `secondary-${Date.now()}`;
+  const secondaryApp = initializeApp(firebaseConfig, secondaryAppName);
+  const secondaryAuth = getAuth(secondaryApp);
+  return { secondaryApp, secondaryAuth };
+}

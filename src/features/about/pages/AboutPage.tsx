@@ -275,7 +275,7 @@ export function AboutPage() {
               transition={{ duration: 0.5 }}
             >
               <img
-                src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80"
+                src="/images/Picture8.jpg"
                 alt="Community"
                 className="rounded-2xl shadow-xl w-full aspect-[4/3] object-cover"
               />

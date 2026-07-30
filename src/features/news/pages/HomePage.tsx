@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
 import {
   ArrowRight,
   Heart,
@@ -29,6 +30,18 @@ const fadeUp = {
     transition: { duration: 0.5, delay: i * 0.1 },
   }),
 };
+
+// Hero slideshow slides
+// Single = one high-res image fills the full background
+// Double = two lower-res images placed side-by-side (each only fills half the width)
+const heroSlides = [
+  { type: "single", images: ["/images/Picture8.jpg"] },
+  { type: "single", images: ["/images/Picture7.jpg"] },
+  { type: "single", images: ["/images/Picture1.png"] },
+  { type: "double", images: ["/images/Picture4.jpg", "/images/Picture5.jpg"] },
+  { type: "single", images: ["/images/Picture3.jpg"] },
+  { type: "double", images: ["/images/Picture6.jpg", "/images/Picture9.jpg"] },
+] as const;
 
 
 const programs = [
@@ -78,6 +91,16 @@ export function HomePage() {
   const latestNews = articles.slice(0, 3);
   const upcomingEvents = events.slice(0, 3);
 
+  // Hero slideshow
+  const [slideIndex, setSlideIndex] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSlideIndex((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+  const currentSlide = heroSlides[slideIndex];
+
   const impactStats = [
     { value: "500+",  labelKey: "impact.volunteers", icon: Users,       color: "text-sky-600" },
     { value: String(chapters.length), labelKey: "impact.chapters", icon: Globe, color: "text-green-600" },
@@ -89,13 +112,29 @@ export function HomePage() {
     <div className="min-h-screen bg-white">
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
-        {/* Background */}
+        {/* Crossfading background slideshow */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1600&q=80"
-            alt="Community"
-            className="w-full h-full object-cover"
-          />
+          <AnimatePresence mode="sync">
+            <motion.div
+              key={slideIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+              className="absolute inset-0 flex"
+            >
+              {currentSlide.images.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt=""
+                  className="h-full object-cover"
+                  style={{ width: `${100 / currentSlide.images.length}%` }}
+                />
+              ))}
+            </motion.div>
+          </AnimatePresence>
+          {/* Permanent dark overlay so text is always readable */}
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/60 to-transparent" />
         </div>
 
@@ -250,7 +289,7 @@ export function HomePage() {
               className="relative"
             >
               <img
-                src="https://images.unsplash.com/photo-1531206715517-5c0ba140b2b8?w=800&q=80"
+                src="/images/Picture8.jpg"
                 alt="Community development"
                 className="rounded-2xl shadow-xl w-full aspect-[4/3] object-cover"
               />

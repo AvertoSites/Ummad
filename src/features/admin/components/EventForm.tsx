@@ -19,9 +19,12 @@ interface EventFormProps {
   initial?: EventData;
   onSubmit: (data: EventInput) => Promise<void>;
   onCancel: () => void;
+  /** If provided, locks the chapter to this ID (chapter editor mode) */
+  lockedChapterId?: string;
+  lockedChapterName?: string;
 }
 
-export function EventForm({ initial, onSubmit, onCancel }: EventFormProps) {
+export function EventForm({ initial, onSubmit, onCancel, lockedChapterId, lockedChapterName }: EventFormProps) {
   const { chapters, loading: chaptersLoading } = useChapters();
 
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -35,7 +38,7 @@ export function EventForm({ initial, onSubmit, onCancel }: EventFormProps) {
   const [endDate, setEndDate] = useState(initial?.endDate ?? "");
   const [location, setLocation] = useState(initial?.location ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
-  const [chapterId, setChapterId] = useState(initial?.chapterId ?? "");
+  const [chapterId, setChapterId] = useState(lockedChapterId ?? initial?.chapterId ?? "");
   const [category, setCategory] = useState(initial?.category ?? "");
   const [registrationUrl, setRegistrationUrl] = useState(
     initial?.registrationUrl ?? "",
@@ -45,7 +48,7 @@ export function EventForm({ initial, onSubmit, onCancel }: EventFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const chapterName = chapters.find((c) => c.id === chapterId)?.name ?? "";
+  const chapterName = lockedChapterName ?? chapters.find((c) => c.id === chapterId)?.name ?? "";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -204,19 +207,25 @@ export function EventForm({ initial, onSubmit, onCancel }: EventFormProps) {
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className={lbl}>Chapter *</label>
-          <select
-            value={chapterId}
-            onChange={(e) => setChapterId(e.target.value)}
-            disabled={chaptersLoading}
-            className={inp}
-          >
-            <option value="">{chaptersLoading ? "Loading…" : "Select…"}</option>
-            {chapters.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          {lockedChapterId ? (
+            <div className={inp + " bg-slate-50 text-slate-500 cursor-not-allowed"}>
+              {lockedChapterName ?? lockedChapterId}
+            </div>
+          ) : (
+            <select
+              value={chapterId}
+              onChange={(e) => setChapterId(e.target.value)}
+              disabled={chaptersLoading}
+              className={inp}
+            >
+              <option value="">{chaptersLoading ? "Loading…" : "Select…"}</option>
+              {chapters.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div>
           <label className={lbl}>Category *</label>

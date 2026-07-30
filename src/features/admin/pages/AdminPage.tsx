@@ -25,6 +25,10 @@ import {
   Eye,
   EyeOff,
   MessageSquare,
+  UserCog,
+  ShieldCheck,
+  Mail,
+  Trash,
 } from "lucide-react";
 import { formatDate } from "../../../utils/format-date";
 import {
@@ -65,10 +69,16 @@ import {
   updateSiteStats,
   type SiteStats,
 } from "../services/siteStats";
+import { sendApprovalEmail, sendRejectionEmail } from "../../../lib/email";
+import { useAdminRole } from "../hooks/useAdminRole";
 import {
-  sendApprovalEmail,
-  sendRejectionEmail,
-} from "../../../lib/email";
+  listChapterEditors,
+  createChapterEditor,
+  removeChapterEditor,
+  sendEditorPasswordReset,
+  type EditorProfile,
+} from "../services/userManagement";
+import { useChapters } from "../../chapters/hooks/useChapters";
 
 type AdminSection =
   | "dashboard"
@@ -77,24 +87,46 @@ type AdminSection =
   | "chapters"
   | "submissions"
   | "siteStats"
-  | "changePassword";
+  | "changePassword"
+  | "users";
 
-const navItems: {
+const allNavItems: {
   key: AdminSection;
   icon: typeof LayoutDashboard;
   labelKey: string;
+  superAdminOnly?: boolean;
 }[] = [
   { key: "dashboard", icon: LayoutDashboard, labelKey: "admin.dashboard" },
-  { key: "submissions", icon: FileText, labelKey: "Submissions" },
+  {
+    key: "submissions",
+    icon: FileText,
+    labelKey: "Submissions",
+    superAdminOnly: true,
+  },
   { key: "news", icon: Newspaper, labelKey: "admin.newsManagement" },
   { key: "events", icon: CalendarDays, labelKey: "admin.eventManagement" },
   { key: "chapters", icon: Building2, labelKey: "admin.chapterManagement" },
-  { key: "siteStats", icon: BarChart2, labelKey: "Site Stats" },
+  {
+    key: "siteStats",
+    icon: BarChart2,
+    labelKey: "Site Stats",
+    superAdminOnly: true,
+  },
+  {
+    key: "users",
+    icon: UserCog,
+    labelKey: "User Management",
+    superAdminOnly: true,
+  },
   { key: "changePassword", icon: KeyRound, labelKey: "Change Password" },
 ];
 
 export function AdminPage() {
   const { t } = useTranslation();
+  const adminRole = useAdminRole();
+  const isSuperAdmin = adminRole.role === "superAdmin";
+  const isEditor = adminRole.role === "chapterEditor";
+
   const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const {
@@ -104,11 +136,25 @@ export function AdminPage() {
   } = useSubmissions();
   const pendingCount = submissions.filter((s) => s.status === "pending").length;
 
+  const navItems = allNavItems.filter(
+    (item) => !item.superAdminOnly || isSuperAdmin,
+  );
+
   const handleSignOut = async () => {
     await signOut();
     setSidebarOpen(false);
     setActiveSection("dashboard");
   };
+
+  if (adminRole.loading) {
+    return (
+      <div className="min-h-screen bg-slate-100 grid place-items-center">
+        <p className="text-sm text-slate-500 animate-pulse">
+          Loading dashboard…
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 flex">
@@ -123,6 +169,20 @@ export function AdminPage() {
           <div className="px-6 py-5 border-b border-slate-800">
             <p className="text-sm font-bold text-white">UMAD Admin</p>
             <p className="text-xs text-slate-400">Management Dashboard</p>
+            {!adminRole.loading && (
+              <div
+                className={`mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-semibold ${
+                  isSuperAdmin
+                    ? "bg-sky-900/60 text-sky-300"
+                    : "bg-green-900/60 text-green-300"
+                }`}
+              >
+                <ShieldCheck size={11} />
+                {isSuperAdmin
+                  ? "Super Admin"
+                  : `Editor — ${adminRole.chapterName ?? ""}`}
+              </div>
+            )}
           </div>
 
           {/* Nav */}
@@ -209,12 +269,13 @@ export function AdminPage() {
           {activeSection === "dashboard" && (
             <DashboardView
               t={t}
-              pendingCount={pendingCount}
+              pendingCount={isSuperAdmin ? pendingCount : 0}
               onGoToSubmissions={() => setActiveSection("submissions")}
               onNav={(s) => setActiveSection(s)}
+              isSuperAdmin={isSuperAdmin}
             />
           )}
-          {activeSection === "submissions" && (
+          {activeSection === "submissions" && isSuperAdmin && (
             <SubmissionsQueue
               submissions={submissions}
               loading={submissionsLoading}
@@ -222,11 +283,41 @@ export function AdminPage() {
               createNews={createNewsArticle}
             />
           )}
-          {activeSection === "news" && <NewsManagement t={t} />}
-          {activeSection === "events" && <EventManagement t={t} />}
-          {activeSection === "chapters" && <ChapterManagement t={t} />}
-          {activeSection === "siteStats" && <SiteStatsManagement />}
+          {activeSection === "news" && (
+            <NewsManagement
+              t={t}
+              lockedChapterId={
+                isEditor ? (adminRole.chapterId ?? undefined) : undefined
+              }
+              lockedChapterName={
+                isEditor ? (adminRole.chapterName ?? undefined) : undefined
+              }
+            />
+          )}
+          {activeSection === "events" && (
+            <EventManagement
+              t={t}
+              lockedChapterId={
+                isEditor ? (adminRole.chapterId ?? undefined) : undefined
+              }
+              lockedChapterName={
+                isEditor ? (adminRole.chapterName ?? undefined) : undefined
+              }
+            />
+          )}
+          {activeSection === "chapters" && (
+            <ChapterManagement
+              t={t}
+              lockedChapterId={
+                isEditor ? (adminRole.chapterId ?? undefined) : undefined
+              }
+            />
+          )}
+          {activeSection === "siteStats" && isSuperAdmin && (
+            <SiteStatsManagement />
+          )}
           {activeSection === "changePassword" && <ChangePasswordSection />}
+          {activeSection === "users" && isSuperAdmin && <UserManagement />}
         </div>
       </div>
     </div>
@@ -239,18 +330,21 @@ function DashboardView({
   pendingCount,
   onGoToSubmissions,
   onNav,
+  isSuperAdmin,
 }: {
   t: (k: string) => string;
   pendingCount: number;
   onGoToSubmissions: () => void;
   onNav: (section: AdminSection) => void;
+  isSuperAdmin: boolean;
 }) {
-  const quickLinks: {
+  const allQuickLinks: {
     section: AdminSection;
     icon: typeof Newspaper;
     label: string;
     color: string;
     bgColor: string;
+    superAdminOnly?: boolean;
   }[] = [
     {
       section: "submissions",
@@ -258,6 +352,7 @@ function DashboardView({
       label: "Submissions",
       color: "text-amber-700",
       bgColor: "bg-amber-100",
+      superAdminOnly: true,
     },
     {
       section: "news",
@@ -281,6 +376,10 @@ function DashboardView({
       bgColor: "bg-purple-100",
     },
   ];
+
+  const quickLinks = allQuickLinks.filter(
+    (l) => !l.superAdminOnly || isSuperAdmin,
+  );
 
   return (
     <div className="space-y-8">
@@ -360,7 +459,15 @@ function DashboardView({
 }
 
 /* ─── News Management ─── */
-function NewsManagement({ t: _t }: { t: (k: string) => string }) {
+function NewsManagement({
+  t: _t,
+  lockedChapterId,
+  lockedChapterName,
+}: {
+  t: (k: string) => string;
+  lockedChapterId?: string;
+  lockedChapterName?: string;
+}) {
   const [newsList, setNewsList] = useState<NewsArticleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -404,10 +511,14 @@ function NewsManagement({ t: _t }: { t: (k: string) => string }) {
     load();
   }, []);
 
-  const filtered =
-    statusFilter === "all"
-      ? newsList
-      : newsList.filter((a) => a.status === statusFilter);
+  const filtered = (() => {
+    let list = newsList;
+    if (lockedChapterId)
+      list = list.filter((a) => a.chapterId === lockedChapterId);
+    if (statusFilter !== "all")
+      list = list.filter((a) => a.status === statusFilter);
+    return list;
+  })();
 
   const handleCreate = async (input: NewsInput) => {
     await createNewsArticle(input);
@@ -470,6 +581,8 @@ function NewsManagement({ t: _t }: { t: (k: string) => string }) {
             initial={editTarget ?? undefined}
             onSubmit={editTarget ? handleUpdate : handleCreate}
             onCancel={closeForm}
+            lockedChapterId={lockedChapterId}
+            lockedChapterName={lockedChapterName}
           />
         </div>
       </div>
@@ -635,7 +748,15 @@ function NewsManagement({ t: _t }: { t: (k: string) => string }) {
 }
 
 /* ─── Event Management ─── */
-function EventManagement({ t: _t }: { t: (k: string) => string }) {
+function EventManagement({
+  t: _t,
+  lockedChapterId,
+  lockedChapterName,
+}: {
+  t: (k: string) => string;
+  lockedChapterId?: string;
+  lockedChapterName?: string;
+}) {
   const [eventList, setEventList] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -699,6 +820,10 @@ function EventManagement({ t: _t }: { t: (k: string) => string }) {
     }
   };
 
+  const displayedEvents = lockedChapterId
+    ? eventList.filter((e) => e.chapterId === lockedChapterId)
+    : eventList;
+
   if (view === "form") {
     return (
       <div className="space-y-5">
@@ -719,6 +844,8 @@ function EventManagement({ t: _t }: { t: (k: string) => string }) {
             initial={editTarget ?? undefined}
             onSubmit={editTarget ? handleUpdate : handleCreate}
             onCancel={closeForm}
+            lockedChapterId={lockedChapterId}
+            lockedChapterName={lockedChapterName}
           />
         </div>
       </div>
@@ -732,7 +859,7 @@ function EventManagement({ t: _t }: { t: (k: string) => string }) {
           <p className="text-sm text-slate-500">
             {loading
               ? "Loading…"
-              : `${eventList.length} event${eventList.length !== 1 ? "s" : ""}`}
+              : `${displayedEvents.length} event${displayedEvents.length !== 1 ? "s" : ""}`}
           </p>
           <button
             onClick={openCreate}
@@ -849,7 +976,13 @@ function EventManagement({ t: _t }: { t: (k: string) => string }) {
 }
 
 /* ─── Chapter Management ─── */
-function ChapterManagement({ t: _t }: { t: (k: string) => string }) {
+function ChapterManagement({
+  t: _t,
+  lockedChapterId,
+}: {
+  t: (k: string) => string;
+  lockedChapterId?: string;
+}) {
   const [chapterList, setChapterList] = useState<ChapterData[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -859,10 +992,6 @@ function ChapterManagement({ t: _t }: { t: (k: string) => string }) {
   const [deleteTarget, setDeleteTarget] = useState<ChapterData | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  function openCreate() {
-    setEditTarget(null);
-    setView("form");
-  }
   function openEdit(c: ChapterData) {
     setEditTarget(c);
     setView("form");
@@ -941,6 +1070,10 @@ function ChapterManagement({ t: _t }: { t: (k: string) => string }) {
     );
   }
 
+  const displayedChapters = lockedChapterId
+    ? chapterList.filter((c) => c.id === lockedChapterId)
+    : chapterList;
+
   return (
     <>
       {/* List view */}
@@ -949,21 +1082,9 @@ function ChapterManagement({ t: _t }: { t: (k: string) => string }) {
           <p className="text-sm text-slate-500">
             {loading
               ? "Loading…"
-              : `${chapterList.length} chapter${chapterList.length !== 1 ? "s" : ""}`}
+              : `${displayedChapters.length} chapter${displayedChapters.length !== 1 ? "s" : ""}`}
           </p>
-          <button
-            onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-700 text-white text-sm font-semibold rounded-lg hover:bg-sky-800 transition-colors"
-          >
-            <Plus size={15} /> New Chapter
-          </button>
         </div>
-
-        {fetchError && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-            {fetchError}
-          </p>
-        )}
 
         {!loading && chapterList.length === 0 && !fetchError && (
           <div className="bg-white rounded-xl border border-slate-100 p-10 text-center text-slate-400">
@@ -1672,6 +1793,314 @@ function ChangePasswordSection() {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+/* ─── User Management ─── */
+function UserManagement() {
+  const { chapters, loading: chaptersLoading } = useChapters();
+  const [editors, setEditors] = useState<EditorProfile[]>([]);
+  const [loadingEditors, setLoadingEditors] = useState(true);
+
+  // Create form state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [createSuccess, setCreateSuccess] = useState("");
+
+  // Remove state
+  const [removingUid, setRemovingUid] = useState<string | null>(null);
+
+  // Reset state
+  const [resetEmail, setResetEmail] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState<string | null>(null);
+
+  async function loadEditors() {
+    setLoadingEditors(true);
+    try {
+      setEditors(await listChapterEditors());
+    } finally {
+      setLoadingEditors(false);
+    }
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadEditors();
+  }, []);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !password || !displayName || !chapterId) {
+      setCreateError("All fields are required.");
+      return;
+    }
+    setCreateError("");
+    setCreateSuccess("");
+    setCreating(true);
+    try {
+      const chapter = chapters.find((c) => c.id === chapterId);
+      await createChapterEditor(
+        email,
+        password,
+        displayName,
+        chapterId,
+        chapter?.name ?? "",
+      );
+      setCreateSuccess(`Editor "${displayName}" created successfully.`);
+      setEmail("");
+      setPassword("");
+      setDisplayName("");
+      setChapterId("");
+      loadEditors();
+    } catch (err) {
+      setCreateError(
+        err instanceof Error ? err.message : "Failed to create editor.",
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleRemove(uid: string) {
+    setRemovingUid(uid);
+    try {
+      await removeChapterEditor(uid);
+      setEditors((prev) => prev.filter((e) => e.uid !== uid));
+    } finally {
+      setRemovingUid(null);
+    }
+  }
+
+  async function handleSendReset(email: string) {
+    setResetEmail(email);
+    setResetSent(null);
+    try {
+      await sendEditorPasswordReset(email);
+      setResetSent(email);
+    } finally {
+      setResetEmail(null);
+    }
+  }
+
+  const inp =
+    "w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors";
+  const lbl =
+    "block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1";
+
+  return (
+    <div className="space-y-8">
+      {/* Create Editor Form */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
+            <UserCog size={20} className="text-sky-700" />
+          </div>
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900">
+              Create Chapter Editor
+            </h2>
+            <p className="text-xs text-slate-500">
+              Editors can manage news, events, and their chapter's info.
+            </p>
+          </div>
+        </div>
+
+        {createError && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 mb-4">
+            {createError}
+          </p>
+        )}
+        {createSuccess && (
+          <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 mb-4">
+            {createSuccess}
+          </p>
+        )}
+
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className={lbl}>Display Name *</label>
+              <input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="e.g. Mogadishu Editor"
+                className={inp}
+              />
+            </div>
+            <div>
+              <label className={lbl}>Chapter *</label>
+              <select
+                value={chapterId}
+                onChange={(e) => setChapterId(e.target.value)}
+                disabled={chaptersLoading}
+                className={inp}
+              >
+                <option value="">
+                  {chaptersLoading ? "Loading…" : "Select chapter…"}
+                </option>
+                {chapters.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className={lbl}>Email *</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="editor@chapter.org"
+                className={inp}
+              />
+            </div>
+            <div>
+              <label className={lbl}>Password *</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min. 6 characters"
+                  className={inp + " pr-10"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={creating}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-700 hover:bg-sky-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus size={15} />
+              {creating ? "Creating…" : "Create Editor"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Editor List */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-base font-extrabold text-slate-900">
+            Chapter Editors
+          </h2>
+          <span className="text-xs text-slate-400">
+            {loadingEditors
+              ? "Loading…"
+              : `${editors.length} editor${editors.length !== 1 ? "s" : ""}`}
+          </span>
+        </div>
+
+        {loadingEditors ? (
+          <div className="p-6 space-y-3">
+            {[1, 2].map((n) => (
+              <div
+                key={n}
+                className="h-12 bg-slate-100 rounded-lg animate-pulse"
+              />
+            ))}
+          </div>
+        ) : editors.length === 0 ? (
+          <div className="p-10 text-center text-slate-400">
+            <UserCog size={32} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm">No chapter editors yet. Create one above.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Name
+                  </th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden sm:table-cell">
+                    Email
+                  </th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">
+                    Chapter
+                  </th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {editors.map((editor) => (
+                  <tr
+                    key={editor.uid}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">
+                          {editor.displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="font-medium text-slate-900">
+                          {editor.displayName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-slate-500 hidden sm:table-cell">
+                      {editor.email}
+                    </td>
+                    <td className="px-5 py-3.5 hidden md:table-cell">
+                      <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
+                        {editor.chapterName || editor.chapterId}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-2">
+                        {/* Password Reset */}
+                        <button
+                          onClick={() => handleSendReset(editor.email)}
+                          disabled={resetEmail === editor.email}
+                          title="Send password reset email"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-lg hover:bg-sky-100 transition-colors disabled:opacity-50"
+                        >
+                          <Mail size={12} />
+                          {resetEmail === editor.email
+                            ? "Sending…"
+                            : resetSent === editor.email
+                              ? "Sent!"
+                              : "Reset Password"}
+                        </button>
+                        {/* Remove */}
+                        <button
+                          onClick={() => handleRemove(editor.uid)}
+                          disabled={removingUid === editor.uid}
+                          title="Remove editor access"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                        >
+                          <Trash size={12} />
+                          {removingUid === editor.uid ? "Removing…" : "Remove"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

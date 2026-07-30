@@ -2,12 +2,17 @@ import { type FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { House, Lock, Mail } from "lucide-react";
 import { signIn } from "../services/auth";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../../../lib/firebase";
 
 export function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,6 +31,23 @@ export function AdminLoginPage() {
       setError("Incorrect email or password. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError("Enter your email address above, then click Forgot Password.");
+      return;
+    }
+    setResetLoading(true);
+    setError("");
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setResetSent(true);
+    } catch {
+      setError("Could not send reset email. Please check the email address.");
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -81,6 +103,11 @@ export function AdminLoginPage() {
           </label>
 
           {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+          {resetSent && (
+            <p className="text-sm font-medium text-green-600">
+              Reset email sent! Check your inbox.
+            </p>
+          )}
 
           <button
             type="submit"
@@ -88,6 +115,15 @@ export function AdminLoginPage() {
             className="w-full rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? "Signing in…" : "Sign In"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={resetLoading}
+            className="w-full text-center text-xs text-slate-500 hover:text-sky-700 transition-colors disabled:opacity-50"
+          >
+            {resetLoading ? "Sending reset email…" : "Forgot Password?"}
           </button>
         </form>
 

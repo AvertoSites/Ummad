@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────────────────────────
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function userRole() {
+      return userDoc().role;
+    }
+    function userChapterId() {
+      return userDoc().chapterId;
+    }
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isSuperAdmin() {
+      return isAuthenticated() && userRole() == "superAdmin";
+    }
+    function isEditorOf(chapterId) {
+      return isAuthenticated()
+        && userRole() == "chapterEditor"
+        && userChapterId() == chapterId;
+    }
+
+    // ── Users collection ──────────────────────────────────────────────────────
+    // Super admin can read/write all; users can only read their own doc.
+    match /users/{uid} {
+      allow read: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin());
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    // ── News ──────────────────────────────────────────────────────────────────
+    match /news/{docId} {
+      allow read: if true;
+      allow create: if isSuperAdmin()
+        || isEditorOf(request.resource.data.chapterId);
+      allow update, delete: if isSuperAdmin()
+        || isEditorOf(resource.data.chapterId);
+    }
+
+    // ── Events ────────────────────────────────────────────────────────────────
+    match /events/{docId} {
+      allow read: if true;
+      allow create: if isSuperAdmin()
+        || isEditorOf(request.resource.data.chapterId);
+      allow update, delete: if isSuperAdmin()
+        || isEditorOf(resource.data.chapterId);
+    }
+
+    // ── Chapters ──────────────────────────────────────────────────────────────
+    // Editors can update only their own chapter; only super admin can create/delete.
+    match /chapters/{docId} {
+      allow read: if true;
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || isEditorOf(docId);
+    }
+
+    // ── Site stats (super admin only) ─────────────────────────────────────────
+    match /siteStats/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+
+    // ── Submissions ───────────────────────────────────────────────────────────
+    match /submissions/{docId} {
+      allow read, write: if isAuthenticated() && isSuperAdmin();
+      allow create: if true; // Public can submit
+    }
+  }
+}
