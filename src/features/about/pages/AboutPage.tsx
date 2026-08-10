@@ -184,6 +184,97 @@ export function AboutPage() {
         </div>
       </section>
 
+      {/* Objectives — placed right after Vision & Mission */}
+      <section id="objectives" className="py-20 bg-gradient-to-br from-slate-900 to-sky-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            className="text-center max-w-3xl mx-auto mb-14"
+          >
+            <p className="text-sky-400 font-semibold tracking-widest text-sm uppercase mb-4">
+              {t("aboutPage.objectivesEyebrow")}
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5">
+              {t("aboutPage.objectivesTitle")}
+            </h2>
+            <p className="text-slate-400 leading-relaxed text-lg">
+              {t("aboutPage.objectivesDesc")}
+            </p>
+          </motion.div>
+
+          {/* 4 objective cards */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {([
+              {
+                icon: Wheat,
+                color: "bg-amber-500",
+                ring: "ring-amber-500/30",
+                label: t("aboutPage.obj1"),
+              },
+              {
+                icon: Stethoscope,
+                color: "bg-rose-500",
+                ring: "ring-rose-500/30",
+                label: t("aboutPage.obj2"),
+              },
+              {
+                icon: ShoppingBag,
+                color: "bg-violet-500",
+                ring: "ring-violet-500/30",
+                label: t("aboutPage.obj3"),
+              },
+              {
+                icon: TreePine,
+                color: "bg-green-500",
+                ring: "ring-green-500/30",
+                label: t("aboutPage.obj4"),
+              },
+            ] as const).map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={i}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                  className={`bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:bg-white/10 transition-all ring-1 ${item.ring}`}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${item.color}`}
+                  >
+                    <Icon size={22} className="text-white" />
+                  </div>
+                  <p className="text-slate-200 text-sm leading-relaxed">
+                    {item.label}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Stakeholder engagement callout */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            className="bg-sky-600/20 border border-sky-500/30 rounded-2xl p-6 flex gap-4 items-start max-w-4xl mx-auto"
+          >
+            <div className="w-10 h-10 rounded-full bg-sky-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Users size={20} className="text-sky-300" />
+            </div>
+            <p className="text-slate-300 leading-relaxed text-sm">
+              {t("aboutPage.obj5")}
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Our Values */}
       <section className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -229,57 +320,6 @@ export function AboutPage() {
                 </motion.div>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* Objectives */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-14 items-center">
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeUp}
-            >
-              <p className="text-sm font-semibold text-sky-700 uppercase tracking-wider mb-3">
-                {t("aboutPage.objectivesEyebrow")}
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-6">
-                {t("aboutPage.objectivesTitle")}
-              </h2>
-              <p className="text-slate-600 mb-6 leading-relaxed">
-                {t("aboutPage.objectivesDesc")}
-              </p>
-              <ul className="space-y-4">
-                {(["obj1", "obj2", "obj3", "obj4", "obj5"] as const).map(
-                  (k) => (
-                    <li key={k} className="flex gap-3">
-                      <CheckCircle
-                        size={18}
-                        className="text-green-600 flex-shrink-0 mt-0.5"
-                      />
-                      <span className="text-slate-600 text-sm leading-relaxed">
-                        {t(`aboutPage.${k}`)}
-                      </span>
-                    </li>
-                  ),
-                )}
-              </ul>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <img
-                src="/images/Picture8.jpg"
-                alt="Community"
-                className="rounded-2xl shadow-xl w-full aspect-[4/3] object-cover"
-              />
-            </motion.div>
           </div>
         </div>
       </section>

@@ -309,6 +309,74 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* ── OBJECTIVES ── */}
+      <section id="objectives" className="py-20 bg-gradient-to-br from-slate-900 to-sky-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            className="text-center max-w-3xl mx-auto mb-14"
+          >
+            <p className="text-sky-400 font-semibold tracking-widest text-sm uppercase mb-4">
+              {t("aboutPage.objectivesEyebrow")}
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-5">
+              {t("aboutPage.objectivesTitle")}
+            </h2>
+            <p className="text-slate-400 leading-relaxed text-lg">
+              {t("aboutPage.objectivesDesc")}
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {([
+              { icon: Wheat,        color: "bg-amber-500",  title: t("aboutPage.obj1") },
+              { icon: Stethoscope,  color: "bg-rose-500",   title: t("aboutPage.obj2") },
+              { icon: ShoppingBag, color: "bg-violet-500", title: t("aboutPage.obj3") },
+              { icon: TreePine,    color: "bg-green-500",  title: t("aboutPage.obj4") },
+            ] as const).map((item, i) => {
+              const Icon = item.icon;
+              return (
+                <motion.div
+                  key={i}
+                  custom={i}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:bg-white/10 transition-colors group"
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${item.color}`}>
+                    <Icon size={22} className="text-white" />
+                  </div>
+                  <p className="text-slate-200 text-sm leading-relaxed">
+                    {item.title}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Stakeholder note */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            className="bg-sky-600/20 border border-sky-500/30 rounded-2xl p-6 flex gap-4 items-start max-w-4xl mx-auto"
+          >
+            <div className="w-10 h-10 rounded-full bg-sky-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Users size={20} className="text-sky-300" />
+            </div>
+            <p className="text-slate-300 leading-relaxed text-sm">
+              {t("aboutPage.obj5")}
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ── PROGRAMS ── */}
       <section id="programs" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
