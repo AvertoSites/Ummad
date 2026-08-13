@@ -4,6 +4,9 @@ service cloud.firestore {
 
     // ── Helper functions ──────────────────────────────────────────────────────
 
+    function isAuthenticated() {
+      return request.auth != null;
+    }
     function userDoc() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
@@ -12,9 +15,6 @@ service cloud.firestore {
     }
     function userChapterId() {
       return userDoc().chapterId;
-    }
-    function isAuthenticated() {
-      return request.auth != null;
     }
     function isSuperAdmin() {
       return isAuthenticated() && userRole() == "superAdmin";
@@ -26,14 +26,31 @@ service cloud.firestore {
     }
 
     // ── Users collection ──────────────────────────────────────────────────────
-    // Super admin can read/write all; users can only read their own doc.
+    // Super admin: full read/write over all user docs.
+    // Any user: can read their own doc.
+    // Self-bootstrap: a user can CREATE their own doc only when no doc exists yet
+    //   AND the role being written is "superAdmin". Safe because chapter editors
+    //   always have their doc created by the admin at account-creation time.
     match /users/{uid} {
       allow read: if isAuthenticated() && (request.auth.uid == uid || isSuperAdmin());
-      allow create, update, delete: if isSuperAdmin();
+      allow create: if isSuperAdmin()
+        || (isAuthenticated()
+            && request.auth.uid == uid
+            && request.resource.data.role == "superAdmin");
+      allow update, delete: if isSuperAdmin();
     }
 
-    // ── News ──────────────────────────────────────────────────────────────────
-    match /news/{docId} {
+    // ── Chapters ──────────────────────────────────────────────────────────────
+    // Public read. Super admin can create/delete. Editors can update their own.
+    match /chapters/{id} {
+      allow read: if true;
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || isEditorOf(id);
+    }
+
+    // ── News Articles ─────────────────────────────────────────────────────────
+    // Public read. Super admin has full write. Editors can write only to their chapter.
+    match /news/{id} {
       allow read: if true;
       allow create: if isSuperAdmin()
         || isEditorOf(request.resource.data.chapterId);
@@ -42,7 +59,7 @@ service cloud.firestore {
     }
 
     // ── Events ────────────────────────────────────────────────────────────────
-    match /events/{docId} {
+    match /events/{id} {
       allow read: if true;
       allow create: if isSuperAdmin()
         || isEditorOf(request.resource.data.chapterId);
@@ -50,24 +67,44 @@ service cloud.firestore {
         || isEditorOf(resource.data.chapterId);
     }
 
-    // ── Chapters ──────────────────────────────────────────────────────────────
-    // Editors can update only their own chapter; only super admin can create/delete.
-    match /chapters/{docId} {
-      allow read: if true;
-      allow create, delete: if isSuperAdmin();
-      allow update: if isSuperAdmin() || isEditorOf(docId);
+    // ── Submissions ───────────────────────────────────────────────────────────
+    // Anyone can submit (with field validation).
+    // Super admin can read/update/delete all.
+    // Chapter editors can read and update (approve/reject) submissions for
+    // their own chapter only.
+    match /submissions/{id} {
+      allow create: if
+        request.resource.data.keys().hasAll([
+          'title', 'excerpt', 'content',
+          'authorName', 'authorEmail',
+          'chapterId', 'chapterName',
+          'category', 'status'
+        ])
+        && request.resource.data.status == "pending"
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 300
+        && request.resource.data.content is string
+        && request.resource.data.content.size() <= 50000;
+
+      allow read: if isSuperAdmin()
+        || isEditorOf(resource.data.chapterId);
+      allow update: if isSuperAdmin()
+        || isEditorOf(resource.data.chapterId);
+      allow delete: if isSuperAdmin();
     }
 
-    // ── Site stats (super admin only) ─────────────────────────────────────────
-    match /siteStats/{docId} {
-      allow read: if isAuthenticated();
+    // ── Site Settings (impact stats, etc.) ────────────────────────────────────
+    // Public read so the homepage can show live stats. Only super admin can write.
+    match /siteSettings/{id} {
+      allow read: if true;
       allow write: if isSuperAdmin();
     }
 
-    // ── Submissions ───────────────────────────────────────────────────────────
-    match /submissions/{docId} {
-      allow read, write: if isAuthenticated() && isSuperAdmin();
-      allow create: if true; // Public can submit
+    // ── Site Stats (legacy alias) ─────────────────────────────────────────────
+    match /siteStats/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
     }
   }
 }

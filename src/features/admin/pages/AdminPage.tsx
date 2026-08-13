@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -97,12 +97,7 @@ const allNavItems: {
   superAdminOnly?: boolean;
 }[] = [
   { key: "dashboard", icon: LayoutDashboard, labelKey: "admin.dashboard" },
-  {
-    key: "submissions",
-    icon: FileText,
-    labelKey: "Submissions",
-    superAdminOnly: true,
-  },
+  { key: "submissions", icon: FileText, labelKey: "Submissions" },
   { key: "news", icon: Newspaper, labelKey: "admin.newsManagement" },
   { key: "events", icon: CalendarDays, labelKey: "admin.eventManagement" },
   { key: "chapters", icon: Building2, labelKey: "admin.chapterManagement" },
@@ -134,7 +129,15 @@ export function AdminPage() {
     loading: submissionsLoading,
     updateStatus,
   } = useSubmissions();
-  const pendingCount = submissions.filter((s) => s.status === "pending").length;
+  const chapterSubmissions =
+    isEditor && adminRole.chapterId
+      ? submissions.filter((s) => s.chapterId === adminRole.chapterId)
+      : isEditor
+        ? []
+        : submissions;
+  const pendingCount = chapterSubmissions.filter(
+    (s) => s.status === "pending",
+  ).length;
 
   const navItems = allNavItems.filter(
     (item) => !item.superAdminOnly || isSuperAdmin,
@@ -269,15 +272,18 @@ export function AdminPage() {
           {activeSection === "dashboard" && (
             <DashboardView
               t={t}
-              pendingCount={isSuperAdmin ? pendingCount : 0}
+              pendingCount={pendingCount}
               onGoToSubmissions={() => setActiveSection("submissions")}
               onNav={(s) => setActiveSection(s)}
               isSuperAdmin={isSuperAdmin}
+              isEditor={isEditor}
+              displayName={adminRole.displayName ?? undefined}
+              chapterName={adminRole.chapterName ?? undefined}
             />
           )}
-          {activeSection === "submissions" && isSuperAdmin && (
+          {activeSection === "submissions" && (isSuperAdmin || isEditor) && (
             <SubmissionsQueue
-              submissions={submissions}
+              submissions={chapterSubmissions}
               loading={submissionsLoading}
               updateStatus={updateStatus}
               createNews={createNewsArticle}
@@ -331,12 +337,18 @@ function DashboardView({
   onGoToSubmissions,
   onNav,
   isSuperAdmin,
+  isEditor,
+  displayName,
+  chapterName,
 }: {
   t: (k: string) => string;
   pendingCount: number;
   onGoToSubmissions: () => void;
   onNav: (section: AdminSection) => void;
   isSuperAdmin: boolean;
+  isEditor: boolean;
+  displayName?: string;
+  chapterName?: string;
 }) {
   const allQuickLinks: {
     section: AdminSection;
@@ -345,6 +357,7 @@ function DashboardView({
     color: string;
     bgColor: string;
     superAdminOnly?: boolean;
+    editorOnly?: boolean;
   }[] = [
     {
       section: "submissions",
@@ -352,7 +365,6 @@ function DashboardView({
       label: "Submissions",
       color: "text-amber-700",
       bgColor: "bg-amber-100",
-      superAdminOnly: true,
     },
     {
       section: "news",
@@ -371,7 +383,7 @@ function DashboardView({
     {
       section: "chapters",
       icon: Building2,
-      label: t("admin.chapterManagement"),
+      label: isEditor ? "Edit My Chapter Info" : t("admin.chapterManagement"),
       color: "text-purple-700",
       bgColor: "bg-purple-100",
     },
@@ -443,17 +455,47 @@ function DashboardView({
         })}
       </div>
 
-      {/* Info panel */}
-      <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
-        <p className="text-sm font-bold text-slate-900 mb-1">
-          Welcome to the UMAD Admin Panel
-        </p>
-        <p className="text-sm text-slate-500 leading-relaxed">
-          Use the sidebar to manage news articles, events, chapters, and review
-          community submissions. All data is stored in Firestore and updates
-          live on the public site.
-        </p>
-      </div>
+      {/* Welcome / info panel */}
+      {isEditor ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-xl border border-slate-100 shadow-sm p-6"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+              <Building2 size={24} className="text-purple-700" />
+            </div>
+            <div>
+              <p className="text-base font-extrabold text-slate-900">
+                Welcome back{displayName ? `, ${displayName}` : ""}!
+              </p>
+              {chapterName && (
+                <p className="text-sm font-semibold text-purple-700 mt-0.5">
+                  {chapterName} Chapter
+                </p>
+              )}
+              <p className="text-sm text-slate-500 leading-relaxed mt-2">
+                You can manage your chapter's news, events, and chapter
+                information using the links above or the sidebar. Changes go
+                live on the public site immediately.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
+          <p className="text-sm font-bold text-slate-900 mb-1">
+            Welcome to the UMAD Admin Panel
+          </p>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Use the sidebar to manage news articles, events, chapters, and
+            review community submissions. All data is stored in Firestore and
+            updates live on the public site.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -983,11 +1025,16 @@ function ChapterManagement({
   t: (k: string) => string;
   lockedChapterId?: string;
 }) {
+  const isEditorView = Boolean(lockedChapterId);
+
   const [chapterList, setChapterList] = useState<ChapterData[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
 
-  const [view, setView] = useState<"list" | "form">("list");
+  // Editors land directly in form mode; super admin starts on list
+  const [view, setView] = useState<"list" | "form">(
+    isEditorView ? "form" : "list",
+  );
   const [editTarget, setEditTarget] = useState<ChapterData | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ChapterData | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -1007,6 +1054,14 @@ function ChapterManagement({
     try {
       const data = await getChapters();
       setChapterList(data);
+      // Auto-open the editor's chapter for editing as soon as data loads
+      if (lockedChapterId) {
+        const myChapter = data.find((c) => c.id === lockedChapterId);
+        if (myChapter) {
+          setEditTarget(myChapter);
+          setView("form");
+        }
+      }
     } catch {
       setFetchError("Failed to load chapters from Firestore.");
     } finally {
@@ -1028,8 +1083,15 @@ function ChapterManagement({
   const handleUpdate = async (input: ChapterInput) => {
     if (!editTarget) return;
     await updateChapter(editTarget.id, input);
-    closeForm();
-    load();
+    // Reload so editTarget reflects saved values; stay in form for editors
+    const fresh = await getChapters();
+    setChapterList(fresh);
+    if (lockedChapterId) {
+      const myChapter = fresh.find((c) => c.id === lockedChapterId);
+      if (myChapter) setEditTarget(myChapter);
+    } else {
+      closeForm();
+    }
   };
 
   const handleDelete = async () => {
@@ -1046,24 +1108,51 @@ function ChapterManagement({
     }
   };
 
+  // Editor loading state — show spinner while chapter data is being fetched
+  if (isEditorView && loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-sm text-slate-400 animate-pulse">
+          Loading your chapter…
+        </p>
+      </div>
+    );
+  }
+
+  // Editor error state
+  if (isEditorView && fetchError) {
+    return (
+      <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+        {fetchError}
+      </p>
+    );
+  }
+
   if (view === "form") {
     return (
       <div className="space-y-5">
-        <button
-          type="button"
-          onClick={closeForm}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
-        >
-          <ArrowLeft size={15} /> Back to Chapters
-        </button>
+        {/* Only show Back button for super admins; editors have nothing to go back to */}
+        {!isEditorView && (
+          <button
+            type="button"
+            onClick={closeForm}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            <ArrowLeft size={15} /> Back to Chapters
+          </button>
+        )}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
           <h2 className="text-lg font-extrabold text-slate-900 mb-6">
-            {editTarget ? `Edit: ${editTarget.name}` : "Create New Chapter"}
+            {editTarget
+              ? `Edit: ${editTarget.name}`
+              : isEditorView
+                ? "Your Chapter"
+                : "Create New Chapter"}
           </h2>
           <ChapterForm
             initial={editTarget ?? undefined}
             onSubmit={editTarget ? handleUpdate : handleCreate}
-            onCancel={closeForm}
+            onCancel={isEditorView ? undefined : closeForm}
           />
         </div>
       </div>
@@ -1076,7 +1165,7 @@ function ChapterManagement({
 
   return (
     <>
-      {/* List view */}
+      {/* List view — only super admins reach here */}
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <p className="text-sm text-slate-500">
@@ -1084,7 +1173,21 @@ function ChapterManagement({
               ? "Loading…"
               : `${displayedChapters.length} chapter${displayedChapters.length !== 1 ? "s" : ""}`}
           </p>
+          {!isEditorView && (
+            <button
+              onClick={() => setView("form")}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-sky-700 text-white text-sm font-semibold rounded-lg hover:bg-sky-800 transition-colors"
+            >
+              <Plus size={15} /> New Chapter
+            </button>
+          )}
         </div>
+
+        {fetchError && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+            {fetchError}
+          </p>
+        )}
 
         {!loading && chapterList.length === 0 && !fetchError && (
           <div className="bg-white rounded-xl border border-slate-100 p-10 text-center text-slate-400">
@@ -1094,7 +1197,7 @@ function ChapterManagement({
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {chapterList.map((chapter) => (
+          {displayedChapters.map((chapter) => (
             <div
               key={chapter.id}
               className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col"
@@ -1127,12 +1230,15 @@ function ChapterManagement({
                   >
                     <Pencil size={12} /> Edit
                   </button>
-                  <button
-                    onClick={() => setDeleteTarget(chapter)}
-                    className="flex-1 py-1.5 text-xs font-semibold bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
-                  >
-                    <Trash2 size={12} /> Delete
-                  </button>
+                  {/* Delete only available to super admin */}
+                  {!isEditorView && (
+                    <button
+                      onClick={() => setDeleteTarget(chapter)}
+                      className="flex-1 py-1.5 text-xs font-semibold bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1140,7 +1246,7 @@ function ChapterManagement({
         </div>
       </div>
 
-      {/* Delete confirmation modal */}
+      {/* Delete confirmation modal — super admin only */}
       {deleteTarget && (
         <DeleteConfirmModal
           title={`Delete "${deleteTarget.name}"?`}
@@ -1814,6 +1920,7 @@ function UserManagement() {
   const [createSuccess, setCreateSuccess] = useState("");
 
   // Remove state
+  const [removeTarget, setRemoveTarget] = useState<EditorProfile | null>(null);
   const [removingUid, setRemovingUid] = useState<string | null>(null);
 
   // Reset state
@@ -1867,11 +1974,13 @@ function UserManagement() {
     }
   }
 
-  async function handleRemove(uid: string) {
-    setRemovingUid(uid);
+  async function handleRemove() {
+    if (!removeTarget) return;
+    setRemovingUid(removeTarget.uid);
     try {
-      await removeChapterEditor(uid);
-      setEditors((prev) => prev.filter((e) => e.uid !== uid));
+      await removeChapterEditor(removeTarget.uid);
+      setEditors((prev) => prev.filter((e) => e.uid !== removeTarget.uid));
+      setRemoveTarget(null);
     } finally {
       setRemovingUid(null);
     }
@@ -1894,213 +2003,253 @@ function UserManagement() {
     "block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1";
 
   return (
-    <div className="space-y-8">
-      {/* Create Editor Form */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
-            <UserCog size={20} className="text-sky-700" />
+    <React.Fragment>
+      <div className="space-y-8">
+        {/* Create Editor Form */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
+              <UserCog size={20} className="text-sky-700" />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900">
+                Create Chapter Editor
+              </h2>
+              <p className="text-xs text-slate-500">
+                Editors can manage news, events, and their chapter's info.
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-base font-extrabold text-slate-900">
-              Create Chapter Editor
-            </h2>
-            <p className="text-xs text-slate-500">
-              Editors can manage news, events, and their chapter's info.
+
+          {createError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 mb-4">
+              {createError}
             </p>
-          </div>
-        </div>
+          )}
+          {createSuccess && (
+            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 mb-4">
+              {createSuccess}
+            </p>
+          )}
 
-        {createError && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 mb-4">
-            {createError}
-          </p>
-        )}
-        {createSuccess && (
-          <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 mb-4">
-            {createSuccess}
-          </p>
-        )}
-
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className={lbl}>Display Name *</label>
-              <input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. Mogadishu Editor"
-                className={inp}
-              />
-            </div>
-            <div>
-              <label className={lbl}>Chapter *</label>
-              <select
-                value={chapterId}
-                onChange={(e) => setChapterId(e.target.value)}
-                disabled={chaptersLoading}
-                className={inp}
-              >
-                <option value="">
-                  {chaptersLoading ? "Loading…" : "Select chapter…"}
-                </option>
-                {chapters.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <label className={lbl}>Email *</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="editor@chapter.org"
-                className={inp}
-              />
-            </div>
-            <div>
-              <label className={lbl}>Password *</label>
-              <div className="relative">
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={lbl}>Display Name *</label>
                 <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min. 6 characters"
-                  className={inp + " pr-10"}
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="e.g. Mogadishu Editor"
+                  className={inp}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              </div>
+              <div>
+                <label className={lbl}>Chapter *</label>
+                <select
+                  value={chapterId}
+                  onChange={(e) => setChapterId(e.target.value)}
+                  disabled={chaptersLoading}
+                  className={inp}
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
+                  <option value="">
+                    {chaptersLoading ? "Loading…" : "Select chapter…"}
+                  </option>
+                  {chapters.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={creating}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-700 hover:bg-sky-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus size={15} />
-              {creating ? "Creating…" : "Create Editor"}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Editor List */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-base font-extrabold text-slate-900">
-            Chapter Editors
-          </h2>
-          <span className="text-xs text-slate-400">
-            {loadingEditors
-              ? "Loading…"
-              : `${editors.length} editor${editors.length !== 1 ? "s" : ""}`}
-          </span>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className={lbl}>Email *</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="editor@chapter.org"
+                  className={inp}
+                />
+              </div>
+              <div>
+                <label className={lbl}>Password *</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min. 6 characters"
+                    className={inp + " pr-10"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={creating}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-700 hover:bg-sky-800 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus size={15} />
+                {creating ? "Creating…" : "Create Editor"}
+              </button>
+            </div>
+          </form>
         </div>
 
-        {loadingEditors ? (
-          <div className="p-6 space-y-3">
-            {[1, 2].map((n) => (
-              <div
-                key={n}
-                className="h-12 bg-slate-100 rounded-lg animate-pulse"
-              />
-            ))}
+        {/* Editor List */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-base font-extrabold text-slate-900">
+              Chapter Editors
+            </h2>
+            <span className="text-xs text-slate-400">
+              {loadingEditors
+                ? "Loading…"
+                : `${editors.length} editor${editors.length !== 1 ? "s" : ""}`}
+            </span>
           </div>
-        ) : editors.length === 0 ? (
-          <div className="p-10 text-center text-slate-400">
-            <UserCog size={32} className="mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No chapter editors yet. Create one above.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-100">
-                <tr>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Name
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden sm:table-cell">
-                    Email
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">
-                    Chapter
-                  </th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {editors.map((editor) => (
-                  <tr
-                    key={editor.uid}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">
-                          {editor.displayName.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-medium text-slate-900">
-                          {editor.displayName}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500 hidden sm:table-cell">
-                      {editor.email}
-                    </td>
-                    <td className="px-5 py-3.5 hidden md:table-cell">
-                      <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
-                        {editor.chapterName || editor.chapterId}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        {/* Password Reset */}
-                        <button
-                          onClick={() => handleSendReset(editor.email)}
-                          disabled={resetEmail === editor.email}
-                          title="Send password reset email"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-lg hover:bg-sky-100 transition-colors disabled:opacity-50"
-                        >
-                          <Mail size={12} />
-                          {resetEmail === editor.email
-                            ? "Sending…"
-                            : resetSent === editor.email
-                              ? "Sent!"
-                              : "Reset Password"}
-                        </button>
-                        {/* Remove */}
-                        <button
-                          onClick={() => handleRemove(editor.uid)}
-                          disabled={removingUid === editor.uid}
-                          title="Remove editor access"
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-                        >
-                          <Trash size={12} />
-                          {removingUid === editor.uid ? "Removing…" : "Remove"}
-                        </button>
-                      </div>
-                    </td>
+
+          {loadingEditors ? (
+            <div className="p-6 space-y-3">
+              {[1, 2].map((n) => (
+                <div
+                  key={n}
+                  className="h-12 bg-slate-100 rounded-lg animate-pulse"
+                />
+              ))}
+            </div>
+          ) : editors.length === 0 ? (
+            <div className="p-10 text-center text-slate-400">
+              <UserCog size={32} className="mx-auto mb-2 opacity-30" />
+              <p className="text-sm">
+                No chapter editors yet. Create one above.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Name
+                    </th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden sm:table-cell">
+                      Email
+                    </th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">
+                      Chapter
+                    </th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {editors.map((editor) => (
+                    <React.Fragment key={editor.uid}>
+                      <tr className="hover:bg-slate-50 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">
+                              {editor.displayName.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="font-medium text-slate-900">
+                              {editor.displayName}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-slate-500 hidden sm:table-cell">
+                          {editor.email}
+                        </td>
+                        <td className="px-5 py-3.5 hidden md:table-cell">
+                          <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
+                            {editor.chapterName || editor.chapterId}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            {/* Password Reset */}
+                            <button
+                              onClick={() => handleSendReset(editor.email)}
+                              disabled={resetEmail === editor.email}
+                              title="Send password reset email"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-lg hover:bg-sky-100 transition-colors disabled:opacity-50"
+                            >
+                              <Mail size={12} />
+                              {resetEmail === editor.email
+                                ? "Sending…"
+                                : resetSent === editor.email
+                                  ? "Sent ✓"
+                                  : "Reset Password"}
+                            </button>
+                            {/* Remove */}
+                            <button
+                              onClick={() => setRemoveTarget(editor)}
+                              disabled={removingUid === editor.uid}
+                              title="Remove editor access"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                            >
+                              <Trash size={12} />
+                              {removingUid === editor.uid
+                                ? "Removing…"
+                                : "Remove"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Spam reminder — shown after reset email is sent */}
+                      {resetSent === editor.email && (
+                        <tr>
+                          <td colSpan={4} className="px-5 pb-3.5">
+                            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+                              <span className="text-amber-500 flex-shrink-0 mt-0.5">
+                                ⚠️
+                              </span>
+                              <p className="text-xs text-amber-800 leading-relaxed">
+                                <strong>Remind the editor:</strong> The reset
+                                email was sent to{" "}
+                                <span className="font-semibold">
+                                  {editor.email}
+                                </span>
+                                . If they can't find it in their inbox, ask them
+                                to{" "}
+                                <strong>check their Spam / Junk folder</strong>{" "}
+                                — reset emails from Firebase often land there on
+                                first send.
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Remove editor confirmation modal */}
+      {removeTarget && (
+        <DeleteConfirmModal
+          title={`Remove "${removeTarget.displayName}"?`}
+          description={`This will immediately revoke ${removeTarget.displayName}'s access to the ${removeTarget.chapterName} chapter dashboard. Their Firebase Auth account remains but they won't be able to log in to the admin panel.`}
+          deleting={removingUid === removeTarget.uid}
+          onConfirm={handleRemove}
+          onCancel={() => setRemoveTarget(null)}
+        />
+      )}
+    </React.Fragment>
   );
 }

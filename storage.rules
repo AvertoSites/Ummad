@@ -1,0 +1,55 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Helper functions ──────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function userDoc() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+    function isSuperAdmin() {
+      return isAuthenticated() && userDoc().role == "superAdmin";
+    }
+    function isChapterEditor() {
+      return isAuthenticated() && userDoc().role == "chapterEditor";
+    }
+
+    // ── Shared upload validation ──────────────────────────────────────────────
+    // Max 5 MB, images only — applied to every write rule below.
+    function validImage() {
+      return request.resource.size <= 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // ── /images/{allPaths=**} ─────────────────────────────────────────────────
+    // All uploaded images are publicly readable.
+    // Super admin: full write/delete access everywhere.
+    // Chapter editor: can upload images (news, events, chapters, leaders,
+    //   programs). Data-level access control is enforced by Firestore rules,
+    //   so any authenticated editor may write here.
+    match /images/{allPaths=**} {
+      allow read: if true;
+      allow write: if (isSuperAdmin() || isChapterEditor()) && validImage();
+      allow delete: if isSuperAdmin() || isChapterEditor();
+    }
+
+    // ── /videos/{allPaths=**} ─────────────────────────────────────────────────
+    // Video uploads for news articles. Max 100 MB per file.
+    // Super admin and chapter editors only.
+    match /videos/{allPaths=**} {
+      allow read: if true;
+      allow write: if (isSuperAdmin() || isChapterEditor())
+        && request.resource.size <= 100 * 1024 * 1024
+        && request.resource.contentType.matches('video/.*');
+      allow delete: if isSuperAdmin() || isChapterEditor();
+    }
+
+    // ── Block everything else ─────────────────────────────────────────────────
+    match /{everything=**} {
+      allow read, write: if false;
+    }
+  }
+}

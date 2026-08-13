@@ -37,18 +37,25 @@ export function NewsDetailPage() {
     .filter((a) => a.id !== article.id && a.chapterId === article.chapterId)
     .slice(0, 3);
 
-  function getEmbedUrl(url: string): string {
+  /**
+   * Returns an embed URL for YouTube / Vimeo, or null if the URL is a direct
+   * video file (Firebase Storage, .mp4, .webm, etc.).
+   */
+  function getEmbedUrl(url: string): string | null {
     const yt = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&\s]+)/);
     if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
     const vi = url.match(/vimeo\.com\/(\d+)/);
     if (vi) return `https://player.vimeo.com/video/${vi[1]}`;
-    return url;
+    // Direct file URL — not embeddable in an iframe
+    return null;
   }
+
+  const embedUrl = article.videoUrl ? getEmbedUrl(article.videoUrl) : null;
 
   return (
     <div className="min-h-screen bg-white pt-16">
-      {/* Hero: video or image */}
-      {article.videoUrl ? (
+      {/* Hero: embedded video, direct video file, or image */}
+      {article.videoUrl && embedUrl ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -57,11 +64,26 @@ export function NewsDetailPage() {
           style={{ paddingTop: "56.25%" }}
         >
           <iframe
-            src={getEmbedUrl(article.videoUrl)}
+            src={embedUrl}
             title={article.title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="absolute inset-0 w-full h-full"
+          />
+        </motion.div>
+      ) : article.videoUrl ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="bg-slate-900 flex items-center justify-center"
+        >
+          <video
+            src={article.videoUrl}
+            controls
+            controlsList="nodownload"
+            playsInline
+            className="w-full max-h-[75vh] object-contain"
           />
         </motion.div>
       ) : (

@@ -3,6 +3,7 @@ import { useChapters } from "../../chapters/hooks/useChapters";
 import { slugify } from "../../news/services/news";
 import type { NewsArticleData, NewsInput } from "../../news/services/news";
 import { ImageUpload } from "../../../components/ImageUpload";
+import { VideoUpload } from "../../../components/VideoUpload";
 
 const CATEGORIES = [
   "Community",
@@ -25,7 +26,13 @@ interface NewsFormProps {
   lockedChapterName?: string;
 }
 
-export function NewsForm({ initial, onSubmit, onCancel, lockedChapterId, lockedChapterName }: NewsFormProps) {
+export function NewsForm({
+  initial,
+  onSubmit,
+  onCancel,
+  lockedChapterId,
+  lockedChapterName,
+}: NewsFormProps) {
   const { chapters, loading: chaptersLoading } = useChapters();
 
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -35,9 +42,17 @@ export function NewsForm({ initial, onSubmit, onCancel, lockedChapterId, lockedC
   const [author, setAuthor] = useState(initial?.author ?? "");
   const [authorEmail, setAuthorEmail] = useState(initial?.authorEmail ?? "");
   const [category, setCategory] = useState(initial?.category ?? "");
-  const [chapterId, setChapterId] = useState(lockedChapterId ?? initial?.chapterId ?? "");
+  const [chapterId, setChapterId] = useState(
+    lockedChapterId ?? initial?.chapterId ?? "",
+  );
   const [image, setImage] = useState(initial?.image ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
+  // Detect whether the existing videoUrl is an uploaded file or a paste URL
+  const [videoSource, setVideoSource] = useState<"url" | "upload">(
+    initial?.videoUrl?.includes("firebasestorage.googleapis.com")
+      ? "upload"
+      : "url",
+  );
   const [status, setStatus] = useState<"published" | "pending" | "rejected">(
     initial?.status ?? "published",
   );
@@ -51,7 +66,8 @@ export function NewsForm({ initial, onSubmit, onCancel, lockedChapterId, lockedC
     if (!initial) setSlug(slugify(title));
   }, [title, initial]);
 
-  const chapterName = lockedChapterName ?? chapters.find((c) => c.id === chapterId)?.name ?? "";
+  const chapterName =
+    lockedChapterName ?? chapters.find((c) => c.id === chapterId)?.name ?? "";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -193,7 +209,9 @@ export function NewsForm({ initial, onSubmit, onCancel, lockedChapterId, lockedC
         <div>
           <label className={lbl}>Chapter *</label>
           {lockedChapterId ? (
-            <div className={inp + " bg-slate-50 text-slate-500 cursor-not-allowed"}>
+            <div
+              className={inp + " bg-slate-50 text-slate-500 cursor-not-allowed"}
+            >
               {lockedChapterName ?? lockedChapterId}
             </div>
           ) : (
@@ -203,7 +221,9 @@ export function NewsForm({ initial, onSubmit, onCancel, lockedChapterId, lockedC
               disabled={chaptersLoading}
               className={inp}
             >
-              <option value="">{chaptersLoading ? "Loading…" : "Select…"}</option>
+              <option value="">
+                {chaptersLoading ? "Loading…" : "Select…"}
+              </option>
               {chapters.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -249,13 +269,59 @@ export function NewsForm({ initial, onSubmit, onCancel, lockedChapterId, lockedC
           />
         </div>
         <div>
-          <label className={lbl}>Video URL (optional)</label>
-          <input
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="YouTube or Vimeo URL"
-            className={inp}
-          />
+          {/* Video — toggle between URL paste and file upload */}
+          <div className="flex items-center justify-between mb-2">
+            <label className={lbl} style={{ marginBottom: 0 }}>
+              Video
+              <span className="ml-1 font-normal text-slate-400 normal-case">
+                (optional)
+              </span>
+            </label>
+            <div className="flex text-xs rounded-lg border border-slate-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setVideoSource("url")}
+                className={`px-3 py-1 font-medium transition-colors ${
+                  videoSource === "url"
+                    ? "bg-sky-600 text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                URL
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoSource("upload")}
+                className={`px-3 py-1 font-medium transition-colors ${
+                  videoSource === "upload"
+                    ? "bg-sky-600 text-white"
+                    : "bg-white text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                Upload
+              </button>
+            </div>
+          </div>
+          {videoSource === "url" ? (
+            <input
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="YouTube or Vimeo URL"
+              className={inp}
+            />
+          ) : (
+            <VideoUpload
+              label=""
+              currentUrl={
+                videoUrl.includes("firebasestorage.googleapis.com")
+                  ? videoUrl
+                  : ""
+              }
+              storagePath="videos/news"
+              onChange={setVideoUrl}
+              optional
+            />
+          )}
         </div>
       </div>
 

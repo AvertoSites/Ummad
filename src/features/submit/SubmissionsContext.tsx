@@ -6,6 +6,8 @@ import {
   useEffect,
   type PropsWithChildren,
 } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../lib/firebase";
 import {
   getSubmissions,
   addSubmissionToFirestore,
@@ -49,10 +51,22 @@ export function SubmissionsProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getSubmissions()
-      .then((data) => setSubmissions(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    // Wait for Firebase Auth to resolve before fetching — the Firestore rules
+    // require the user to be authenticated, so fetching before auth resolves
+    // silently returns an empty list.
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setSubmissions([]);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      getSubmissions()
+        .then((data) => setSubmissions(data))
+        .catch(() => setSubmissions([]))
+        .finally(() => setLoading(false));
+    });
+    return unsubscribe;
   }, []);
 
   async function addSubmission(
@@ -69,9 +83,7 @@ export function SubmissionsProvider({ children }: PropsWithChildren) {
   ) {
     await updateSubmissionStatus(id, status, rejectionReason);
     setSubmissions((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, status, rejectionReason } : s,
-      ),
+      prev.map((s) => (s.id === id ? { ...s, status, rejectionReason } : s)),
     );
   }
 

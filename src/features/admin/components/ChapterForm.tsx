@@ -12,7 +12,7 @@ import {
 interface ChapterFormProps {
   initial?: ChapterData;
   onSubmit: (data: ChapterInput) => Promise<void>;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 function emptyLeader(): LeaderData {
@@ -597,13 +597,15 @@ export function ChapterForm({ initial, onSubmit, onCancel }: ChapterFormProps) {
       )}
 
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-5 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-        >
-          Cancel
-        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-5 py-2.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Cancel
+          </button>
+        )}
         <button
           type="submit"
           disabled={saving}
