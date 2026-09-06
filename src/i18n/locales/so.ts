@@ -112,6 +112,7 @@ const so = {
     // News
     news: {
       eyebrow: "Wararka Ugu Dambeeyay",
+      topStory: "Warka Ugu Muhiimsan",
       title: "La Warqabso",
       description:
         "Cusboonaysiinta xarumahayaga iyo barnaamijyada adduunka oo dhan.",

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
 import { useNewsArticle, useNews } from "../hooks/useNews";
 import { NewsCard } from "../../../components/shared/NewsCard";
+import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
 import { formatDate } from "../../../utils/format-date";
 import { trackArticleView } from "../../../lib/analytics";
 
@@ -39,13 +40,14 @@ export function NewsDetailPage() {
 
   /**
    * Returns an embed URL for YouTube / Vimeo, or null if the URL is a direct
-   * video file (Firebase Storage, .mp4, .webm, etc.).
+   * video file (Firebase Storage, .mp4, .webm, etc.). The reader arrived here by
+   * clicking through, so the player starts with sound.
    */
   function getEmbedUrl(url: string): string | null {
     const yt = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&\s]+)/);
-    if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+    if (yt) return `https://www.youtube.com/embed/${yt[1]}?autoplay=1`;
     const vi = url.match(/vimeo\.com\/(\d+)/);
-    if (vi) return `https://player.vimeo.com/video/${vi[1]}`;
+    if (vi) return `https://player.vimeo.com/video/${vi[1]}?autoplay=1`;
     // Direct file URL — not embeddable in an iframe
     return null;
   }
@@ -81,12 +83,13 @@ export function NewsDetailPage() {
           <video
             src={article.videoUrl}
             controls
+            autoPlay
             controlsList="nodownload"
             playsInline
             className="w-full max-h-[75vh] object-contain"
           />
         </motion.div>
-      ) : (
+      ) : article.image ? (
         <div className="relative h-64 sm:h-96 overflow-hidden">
           <motion.img
             src={article.image}
@@ -98,6 +101,8 @@ export function NewsDetailPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
         </div>
+      ) : (
+        <MediaPlaceholder className="h-64 sm:h-96" size="lg" />
       )}
 
       {/* Article */}

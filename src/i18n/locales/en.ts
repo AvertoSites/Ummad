@@ -113,6 +113,7 @@ const en = {
     // News
     news: {
       eyebrow: "Latest News",
+      topStory: "Top Story",
       title: "Stay Informed",
       description: "Updates from our chapters and programs across the globe.",
       readMore: "Read More",

@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Calendar } from "lucide-react";
+import { Calendar, PlayCircle, ArrowRight } from "lucide-react";
 import type { NewsArticleData as NewsArticle } from "../../features/news/services/news";
 import { formatDate } from "../../utils/format-date";
+import { isDirectVideoFile } from "../../utils/video";
+import { CardVideo } from "./CardVideo";
+import { MediaPlaceholder } from "./MediaPlaceholder";
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -10,19 +13,37 @@ interface NewsCardProps {
 
 export function NewsCard({ article }: NewsCardProps) {
   const { t } = useTranslation();
+  const previewVideo =
+    article.videoUrl && isDirectVideoFile(article.videoUrl)
+      ? article.videoUrl
+      : null;
 
   return (
-    <article className="group bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-      <div className="aspect-video overflow-hidden bg-slate-100">
+    <Link
+      to={`/news/${article.slug}`}
+      className="group block bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-lg hover:border-sky-200 hover:-translate-y-1 transition-all duration-300"
+    >
+      <div className="aspect-video overflow-hidden relative bg-gradient-to-br from-sky-50 to-slate-100">
         {article.image ? (
           <img
             src={article.image}
             alt={article.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
+        ) : previewVideo ? (
+          <>
+            <MediaPlaceholder className="absolute inset-0" />
+            <CardVideo
+              src={previewVideo}
+              className="relative w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          </>
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Calendar size={28} className="text-slate-300" />
+          <MediaPlaceholder className="w-full h-full" />
+        )}
+        {article.videoUrl && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/25 group-hover:bg-slate-900/35 transition-colors pointer-events-none">
+            <PlayCircle size={44} className="text-white drop-shadow-lg" />
           </div>
         )}
       </div>
@@ -44,14 +65,15 @@ export function NewsCard({ article }: NewsCardProps) {
             <Calendar size={13} />
             <span>{formatDate(article.publishedAt)}</span>
           </div>
-          <Link
-            to={`/news/${article.slug}`}
-            className="text-sm font-semibold text-sky-700 hover:text-sky-800 transition-colors"
-          >
-            {t("news.readMore")} →
-          </Link>
+          <span className="inline-flex items-center gap-1 text-sm font-semibold text-sky-700">
+            {t("news.readMore")}
+            <ArrowRight
+              size={14}
+              className="group-hover:translate-x-1 transition-transform"
+            />
+          </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, MapPin, Users, Clock } from "lucide-react";
 import { useEventBySlug } from "../hooks/useEvents";
+import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
 import { formatDate } from "../../../utils/format-date";
 import { trackEventView } from "../../../lib/analytics";
 
@@ -35,14 +36,18 @@ export function EventDetailPage() {
     <div className="min-h-screen bg-white pt-16">
       {/* Hero */}
       <div className="relative h-64 sm:h-96 overflow-hidden">
-        <motion.img
-          src={event.image}
-          alt={event.title}
-          initial={{ scale: 1.08, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-          className="w-full h-full object-cover"
-        />
+        {event.image ? (
+          <motion.img
+            src={event.image}
+            alt={event.title}
+            initial={{ scale: 1.08, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <MediaPlaceholder className="absolute inset-0" size="lg" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-transparent" />
         <motion.div
           initial={{ opacity: 0, y: 16 }}

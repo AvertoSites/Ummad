@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import {
   ArrowRight,
+  Calendar,
   Heart,
   Users,
   Globe,
@@ -14,6 +15,8 @@ import {
   TreePine,
   Lightbulb,
   ShoppingBag,
+  PlayCircle,
+  Star,
 } from "lucide-react";
 import { useChapters } from "../../chapters/hooks/useChapters";
 import { useNews } from "../hooks/useNews";
@@ -21,6 +24,10 @@ import { useEvents } from "../../events/hooks/useEvents";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { EventCard } from "../../../components/shared/EventCard";
 import { ChapterCard } from "../../../components/shared/ChapterCard";
+import { CardVideo } from "../../../components/shared/CardVideo";
+import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
+import { formatDate } from "../../../utils/format-date";
+import { isDirectVideoFile } from "../../../utils/video";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -31,18 +38,17 @@ const fadeUp = {
   }),
 };
 
-// Hero slideshow slides
-// Single = one high-res image fills the full background
-// Double = two lower-res images placed side-by-side (each only fills half the width)
-const heroSlides = [
-  { type: "single", images: ["/images/Picture8.jpg"] },
-  { type: "single", images: ["/images/Picture7.jpg"] },
-  { type: "single", images: ["/images/Picture1.png"] },
-  { type: "double", images: ["/images/Picture4.jpg", "/images/Picture5.jpg"] },
-  { type: "single", images: ["/images/Picture3.jpg"] },
-  { type: "double", images: ["/images/Picture6.jpg", "/images/Picture9.jpg"] },
-] as const;
-
+// Crossfading background images for the "about" panel
+const aboutSlides = [
+  "/images/Picture8.jpg",
+  "/images/Picture7.jpg",
+  "/images/Picture1.png",
+  "/images/Picture3.jpg",
+  "/images/Picture4.jpg",
+  "/images/Picture5.jpg",
+  "/images/Picture6.jpg",
+  "/images/Picture9.jpg",
+];
 
 const programs = [
   {
@@ -88,18 +94,22 @@ export function HomePage() {
   const { chapters, loading: chaptersLoading } = useChapters();
   const { articles, loading: newsLoading } = useNews();
   const { events, loading: eventsLoading } = useEvents();
-  const latestNews = articles.slice(0, 3);
+  const featuredArticle = articles[0];
+  const featuredPreviewVideo =
+    featuredArticle?.videoUrl && isDirectVideoFile(featuredArticle.videoUrl)
+      ? featuredArticle.videoUrl
+      : null;
+  const secondaryNews = articles.slice(1, 10);
+  const latestNews = articles.slice(1, 4);
   const upcomingEvents = events.slice(0, 3);
 
-  // Hero slideshow
-  const [slideIndex, setSlideIndex] = useState(0);
+  const [aboutSlideIndex, setAboutSlideIndex] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => {
-      setSlideIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
+      setAboutSlideIndex((prev) => (prev + 1) % aboutSlides.length);
+    }, 4000);
     return () => clearInterval(timer);
   }, []);
-  const currentSlide = heroSlides[slideIndex];
 
   const impactStats = [
     { value: "500+",  labelKey: "impact.volunteers", icon: Users,       color: "text-sky-600" },
@@ -110,93 +120,260 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ── HERO ── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden">
-        {/* Crossfading background slideshow */}
-        <div className="absolute inset-0 z-0">
-          <AnimatePresence mode="sync">
+      {/* ── TOP STORY ── */}
+      <section className="bg-slate-50 pt-24 sm:pt-28 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Featured story — large box */}
             <motion.div
-              key={slideIndex}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
-              className="absolute inset-0 flex"
-            >
-              {currentSlide.images.map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt=""
-                  className="h-full object-cover"
-                  style={{ width: `${100 / currentSlide.images.length}%` }}
-                />
-              ))}
-            </motion.div>
-          </AnimatePresence>
-          {/* Permanent dark overlay so text is always readable */}
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/60 to-transparent" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 pt-32">
-          <motion.div initial="hidden" animate="visible" className="max-w-2xl">
-            <motion.p
+              initial="hidden"
+              animate="visible"
               custom={0}
               variants={fadeUp}
-              className="text-sky-400 font-semibold tracking-widest text-sm uppercase mb-4"
-            >
-              {t("hero.tagline")}
-            </motion.p>
-            <motion.h1
-              custom={1}
-              variants={fadeUp}
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6"
-            >
-              {t("hero.headline")}
-            </motion.h1>
-            <motion.p
-              custom={2}
-              variants={fadeUp}
-              className="text-lg text-slate-300 leading-relaxed mb-10"
-            >
-              {t("hero.subheadline")}
-            </motion.p>
-            <motion.div
-              custom={3}
-              variants={fadeUp}
-              className="flex flex-wrap gap-4"
+              className="lg:col-span-2"
             >
               <Link
-                to="/about"
-                className="px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-xl transition-colors"
+                to={featuredArticle ? `/news/${featuredArticle.slug}` : "/news"}
+                className="group relative flex flex-col justify-end min-h-[380px] sm:min-h-[460px] h-full rounded-3xl overflow-hidden shadow-lg bg-slate-800"
               >
-                {t("hero.ctaLearnMore")}
-              </Link>
-              <Link
-                to="/news"
-                className="px-6 py-3 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl transition-colors"
-              >
-                {t("news.viewAll")}
-              </Link>
-              <Link
-                to="/chapters"
-                className="px-6 py-3 border-2 border-white/40 hover:border-white text-white font-semibold rounded-xl transition-colors"
-              >
-                {t("hero.ctaChapters")}
+                {newsLoading ? (
+                  <div className="absolute inset-0 bg-slate-200 animate-pulse" />
+                ) : featuredArticle?.image ? (
+                  <img
+                    src={featuredArticle.image}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : featuredPreviewVideo ? (
+                  <>
+                    <MediaPlaceholder className="absolute inset-0" size="lg" />
+                    <CardVideo
+                      src={featuredPreviewVideo}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </>
+                ) : (
+                  <MediaPlaceholder className="absolute inset-0" size="lg" />
+                )}
+                {!newsLoading && featuredArticle?.videoUrl && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900/15 group-hover:bg-slate-900/25 transition-colors pointer-events-none">
+                    <PlayCircle size={64} className="text-white drop-shadow-lg" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent" />
+                <div className="relative z-10 p-6 sm:p-10">
+                  {newsLoading ? (
+                    <div className="space-y-3">
+                      <div className="h-4 w-24 bg-white/20 rounded-full" />
+                      <div className="h-8 w-3/4 bg-white/20 rounded" />
+                      <div className="h-4 w-full bg-white/10 rounded" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-wrap items-center gap-2 mb-4">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 bg-amber-400 text-slate-900 rounded-full uppercase tracking-wider">
+                          <Star size={12} className="fill-slate-900" />
+                          {t("news.topStory")}
+                        </span>
+                        {featuredArticle?.category && (
+                          <span className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-white/15 text-white rounded-full uppercase tracking-wide backdrop-blur-sm">
+                            {featuredArticle.category}
+                          </span>
+                        )}
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight mb-3 max-w-2xl">
+                        {featuredArticle?.title ?? t("hero.headline")}
+                      </h2>
+                      <p className="text-slate-200 text-sm sm:text-base leading-relaxed mb-5 line-clamp-2 max-w-2xl">
+                        {featuredArticle?.excerpt ?? t("hero.subheadline")}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-slate-300">
+                        {featuredArticle ? (
+                          <>
+                            <span className="font-medium">{featuredArticle.chapterName}</span>
+                            <span className="w-1 h-1 rounded-full bg-slate-400" />
+                            <span className="inline-flex items-center gap-1.5">
+                              <Calendar size={12} />
+                              {formatDate(featuredArticle.publishedAt)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-sky-300">
+                            {t("news.viewAll")} <ArrowRight size={13} />
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </Link>
             </motion.div>
-          </motion.div>
-        </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
-            className="w-5 h-8 rounded-full border-2 border-white/40 flex items-start justify-center pt-1.5"
-          >
-            <div className="w-1 h-2 bg-white/60 rounded-full" />
-          </motion.div>
+            {/* About the site — small box */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              custom={1}
+              variants={fadeUp}
+              className="lg:col-span-1"
+            >
+              <div className="relative flex flex-col h-full min-h-[380px] sm:min-h-[460px] rounded-3xl overflow-hidden shadow-lg">
+                <div className="absolute inset-0">
+                  <AnimatePresence mode="sync">
+                    <motion.img
+                      key={aboutSlideIndex}
+                      src={aboutSlides[aboutSlideIndex]}
+                      alt=""
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 1.2, ease: "easeInOut" }}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </AnimatePresence>
+                  <div className="absolute inset-0 bg-gradient-to-b from-sky-900/85 via-sky-900/80 to-slate-950/90" />
+                </div>
+                <div className="relative z-10 flex flex-col h-full p-8">
+                  <p className="text-sky-300 font-semibold tracking-widest text-xs uppercase mb-4">
+                    {t("hero.tagline")}
+                  </p>
+                  <h3 className="text-2xl font-extrabold text-white leading-snug mb-4">
+                    {t("hero.headline")}
+                  </h3>
+                  <p className="text-sky-100/80 text-sm leading-relaxed mb-8">
+                    {t("hero.subheadline")}
+                  </p>
+                  <div className="mt-auto flex flex-col gap-3">
+                    <Link
+                      to="/about"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white text-sky-800 font-semibold rounded-xl hover:bg-sky-50 transition-colors text-sm"
+                    >
+                      {t("hero.ctaLearnMore")} <ArrowRight size={15} />
+                    </Link>
+                    <Link
+                      to="/chapters"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors text-sm"
+                    >
+                      {t("hero.ctaChapters")}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* More headlines — small news boxes */}
+          <div className="mt-10">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center justify-between mb-5"
+            >
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+                More Headlines
+              </h3>
+              <Link
+                to="/news"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-700 hover:text-sky-800"
+              >
+                {t("news.viewAll")} <ArrowRight size={14} />
+              </Link>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {newsLoading ? (
+                Array.from({ length: 6 }).map((_, n) => (
+                  <div
+                    key={n}
+                    className="bg-white rounded-2xl overflow-hidden border border-slate-100 animate-pulse"
+                  >
+                    <div className="aspect-[16/10] bg-slate-200" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-2.5 bg-slate-200 rounded w-1/3" />
+                      <div className="h-4 bg-slate-200 rounded w-full" />
+                      <div className="h-4 bg-slate-200 rounded w-2/3" />
+                    </div>
+                  </div>
+                ))
+              ) : secondaryNews.length === 0 ? (
+                <div className="col-span-full text-center py-10 text-slate-400">
+                  <p className="font-medium">
+                    No more articles yet — check back soon.
+                  </p>
+                </div>
+              ) : (
+                secondaryNews.map((article, i) => {
+                  const previewVideo =
+                    article.videoUrl && isDirectVideoFile(article.videoUrl)
+                      ? article.videoUrl
+                      : null;
+                  return (
+                    <motion.div
+                      key={article.id}
+                      custom={i}
+                      initial="hidden"
+                      whileInView="visible"
+                      viewport={{ once: true }}
+                      variants={fadeUp}
+                      className="h-full"
+                    >
+                      <Link
+                        to={`/news/${article.slug}`}
+                        className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-lg hover:border-sky-200 hover:-translate-y-1 transition-all duration-300"
+                      >
+                        <div className="aspect-[16/10] overflow-hidden relative bg-gradient-to-br from-sky-50 to-slate-100">
+                          {article.image ? (
+                            <img
+                              src={article.image}
+                              alt=""
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : previewVideo ? (
+                            <>
+                              <MediaPlaceholder className="absolute inset-0" size="sm" />
+                              <CardVideo
+                                src={previewVideo}
+                                className="relative w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            </>
+                          ) : (
+                            <MediaPlaceholder className="w-full h-full" size="sm" />
+                          )}
+                          {article.videoUrl && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/25 group-hover:bg-slate-900/35 transition-colors pointer-events-none">
+                              <PlayCircle size={36} className="text-white drop-shadow-lg" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col flex-1 p-4">
+                          <span className="text-[10px] font-semibold text-sky-700 uppercase tracking-wide mb-1.5">
+                            {article.category}
+                          </span>
+                          <h4 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-sky-700 transition-colors mb-3">
+                            {article.title}
+                          </h4>
+                          <div className="mt-auto flex items-center justify-between pt-2 border-t border-slate-50">
+                            <span className="text-xs text-slate-400">
+                              {formatDate(article.publishedAt)}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700">
+                              {t("news.readMore")}
+                              <ArrowRight
+                                size={12}
+                                className="group-hover:translate-x-1 transition-transform"
+                              />
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </section>
 

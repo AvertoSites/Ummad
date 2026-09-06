@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowRight } from "lucide-react";
 import type { EventData as Event } from "../../features/events/services/events";
 import { formatDate } from "../../utils/format-date";
+import { MediaPlaceholder } from "./MediaPlaceholder";
 
 interface EventCardProps {
   event: Event;
@@ -12,8 +13,11 @@ export function EventCard({ event }: EventCardProps) {
   const { t } = useTranslation();
 
   return (
-    <article className="group bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-      <div className="aspect-video overflow-hidden relative bg-slate-100">
+    <Link
+      to={`/events/${event.slug}`}
+      className="group block bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-lg hover:border-sky-200 hover:-translate-y-1 transition-all duration-300"
+    >
+      <div className="aspect-video overflow-hidden relative bg-gradient-to-br from-amber-50 to-slate-100">
         {event.image ? (
           <img
             src={event.image}
@@ -21,9 +25,7 @@ export function EventCard({ event }: EventCardProps) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Calendar size={28} className="text-slate-300" />
-          </div>
+          <MediaPlaceholder className="w-full h-full" />
         )}
         {event.isFree && (
           <span className="absolute top-3 right-3 px-2.5 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
@@ -61,13 +63,14 @@ export function EventCard({ event }: EventCardProps) {
             </div>
           )}
         </div>
-        <Link
-          to={`/events/${event.slug}`}
-          className="block text-center px-4 py-2 bg-sky-700 text-white text-sm font-semibold rounded-lg hover:bg-sky-800 transition-colors"
-        >
+        <span className="flex items-center justify-center gap-1.5 text-center px-4 py-2 bg-sky-700 text-white text-sm font-semibold rounded-lg group-hover:bg-sky-800 transition-colors">
           {t("events.learnMore")}
-        </Link>
+          <ArrowRight
+            size={14}
+            className="group-hover:translate-x-1 transition-transform"
+          />
+        </span>
       </div>
-    </article>
+    </Link>
   );
 }
