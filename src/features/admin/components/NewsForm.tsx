@@ -4,6 +4,7 @@ import { slugify } from "../../news/services/news";
 import type { NewsArticleData, NewsInput } from "../../news/services/news";
 import { ImageUpload } from "../../../components/ImageUpload";
 import { VideoUpload } from "../../../components/VideoUpload";
+import { SegmentedToggle } from "../../../components/shared/SegmentedToggle";
 
 const CATEGORIES = [
   "Community",
@@ -277,30 +278,15 @@ export function NewsForm({
                 (optional)
               </span>
             </label>
-            <div className="flex text-xs rounded-lg border border-slate-200 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setVideoSource("url")}
-                className={`px-3 py-1 font-medium transition-colors ${
-                  videoSource === "url"
-                    ? "bg-sky-600 text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                URL
-              </button>
-              <button
-                type="button"
-                onClick={() => setVideoSource("upload")}
-                className={`px-3 py-1 font-medium transition-colors ${
-                  videoSource === "upload"
-                    ? "bg-sky-600 text-white"
-                    : "bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                Upload
-              </button>
-            </div>
+            <SegmentedToggle
+              aria-label="Video source"
+              value={videoSource}
+              onChange={setVideoSource}
+              options={[
+                { value: "url", label: "URL" },
+                { value: "upload", label: "Upload" },
+              ]}
+            />
           </div>
           {videoSource === "url" ? (
             <input

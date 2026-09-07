@@ -7,6 +7,13 @@ import {
   InstagramIcon,
 } from "../shared/SocialIcons";
 import { useChapters } from "../../features/chapters/hooks/useChapters";
+import { siteConfig } from "../../config/site";
+
+const SOCIAL_META = {
+  facebook: { Icon: FacebookIcon, label: "Facebook" },
+  x: { Icon: TwitterIcon, label: "X" },
+  instagram: { Icon: InstagramIcon, label: "Instagram" },
+} as const;
 
 export function Footer() {
   const { t } = useTranslation();
@@ -14,12 +21,13 @@ export function Footer() {
 
   const quickLinks = [
     { label: t("nav.home"), href: "/" },
-    { label: t("nav.about"), href: "/#about" },
+    { label: t("nav.about"), href: "/about" },
     { label: t("news.viewAll"), href: "/news" },
     { label: t("events.viewAll"), href: "/events" },
   ];
 
   const featuredChapters = chapters.slice(0, 3);
+  const { email, phone } = siteConfig.contact;
 
   return (
     <footer className="bg-slate-900 text-slate-300" id="contact">
@@ -27,9 +35,9 @@ export function Footer() {
       <div className="h-1 bg-gradient-to-r from-sky-600 via-green-500 to-amber-500" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-10">
           {/* Brand column */}
-          <div className="col-span-2 lg:col-span-1">
+          <div className="col-span-2 sm:col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-3 mb-4">
               <img
                 src="/images/logo.png"
@@ -102,21 +110,26 @@ export function Footer() {
               <li className="flex items-start gap-2.5">
                 <Mail size={15} className="text-sky-400 mt-0.5 flex-shrink-0" />
                 <a
-                  href="mailto:info.ummad26@gmail.com"
-                  className="text-sm text-slate-400 hover:text-white transition-colors"
+                  href={`mailto:${email}`}
+                  className="text-sm text-slate-400 hover:text-white transition-colors break-all"
                 >
-                  info.ummad26@gmail.com
+                  {email}
                 </a>
               </li>
-              <li className="flex items-start gap-2.5">
-                <Phone
-                  size={15}
-                  className="text-sky-400 mt-0.5 flex-shrink-0"
-                />
-                <span className="text-sm text-slate-400">
-                  +1 (613) 555-0199
-                </span>
-              </li>
+              {phone && (
+                <li className="flex items-start gap-2.5">
+                  <Phone
+                    size={15}
+                    className="text-sky-400 mt-0.5 flex-shrink-0"
+                  />
+                  <a
+                    href={`tel:${phone.replace(/[^+\d]/g, "")}`}
+                    className="text-sm text-slate-400 hover:text-white transition-colors"
+                  >
+                    {phone}
+                  </a>
+                </li>
+              )}
               {chapters.length > 0 && (
                 <li className="flex items-start gap-2.5">
                   <MapPin
@@ -132,36 +145,26 @@ export function Footer() {
                 </li>
               )}
             </ul>
-            {/* Social links */}
-            <div className="flex items-center gap-3 mt-5">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-sky-700 hover:text-white transition-colors"
-                aria-label="Facebook"
-              >
-                <FacebookIcon size={15} />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-sky-700 hover:text-white transition-colors"
-                aria-label="Twitter"
-              >
-                <TwitterIcon size={15} />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-sky-700 hover:text-white transition-colors"
-                aria-label="Instagram"
-              >
-                <InstagramIcon size={15} />
-              </a>
-            </div>
+            {/* Social links — only rendered for networks with a real URL */}
+            {siteConfig.social.length > 0 && (
+              <div className="flex items-center gap-3 mt-5">
+                {siteConfig.social.map(({ network, url }) => {
+                  const { Icon, label } = SOCIAL_META[network];
+                  return (
+                    <a
+                      key={network}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-sky-700 hover:text-white transition-colors"
+                      aria-label={label}
+                    >
+                      <Icon size={15} />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

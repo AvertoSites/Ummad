@@ -1,12 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, User, Tag } from "lucide-react";
+import { ArrowLeft, Calendar, User, Tag, Clock } from "lucide-react";
 import { useNewsArticle, useNews } from "../hooks/useNews";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
+import { ShareButtons } from "../../../components/shared/ShareButtons";
+import { ArticleBody } from "../components/ArticleBody";
+import { readingTimeMinutes } from "../../../utils/reading-time";
 import { formatDate } from "../../../utils/format-date";
+import { getVideoEmbedUrl } from "../../../utils/video";
 import { trackArticleView } from "../../../lib/analytics";
 
 export function NewsDetailPage() {
@@ -25,6 +29,28 @@ export function NewsDetailPage() {
     }
   }, [article, slug]);
 
+  // Related: same chapter first, then same category, then most recent — max 3.
+  const related = useMemo(() => {
+    if (!article) return [];
+    const pool = articles.filter((a) => a.id !== article.id);
+    const seen = new Set<string>();
+    const pick: typeof pool = [];
+    for (const group of [
+      pool.filter((a) => a.chapterId === article.chapterId),
+      pool.filter((a) => a.category === article.category),
+      pool,
+    ]) {
+      for (const a of group) {
+        if (pick.length >= 3) break;
+        if (!seen.has(a.id)) {
+          seen.add(a.id);
+          pick.push(a);
+        }
+      }
+    }
+    return pick;
+  }, [article, articles]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white pt-16 flex items-center justify-center">
@@ -34,30 +60,18 @@ export function NewsDetailPage() {
   }
   if (!article) return <Navigate to="/news" replace />;
 
-  const related = articles
-    .filter((a) => a.id !== article.id && a.chapterId === article.chapterId)
-    .slice(0, 3);
-
-  /**
-   * Returns an embed URL for YouTube / Vimeo, or null if the URL is a direct
-   * video file (Firebase Storage, .mp4, .webm, etc.). The reader arrived here by
-   * clicking through, so the player starts with sound.
-   */
-  function getEmbedUrl(url: string): string | null {
-    const yt = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&\s]+)/);
-    if (yt) return `https://www.youtube.com/embed/${yt[1]}?autoplay=1`;
-    const vi = url.match(/vimeo\.com\/(\d+)/);
-    if (vi) return `https://player.vimeo.com/video/${vi[1]}?autoplay=1`;
-    // Direct file URL — not embeddable in an iframe
-    return null;
-  }
-
-  const embedUrl = article.videoUrl ? getEmbedUrl(article.videoUrl) : null;
+  const embedUrl = article.videoUrl
+    ? getVideoEmbedUrl(article.videoUrl, { autoplay: false })
+    : null;
+  const embedSrc = embedUrl
+    ? `${embedUrl}${embedUrl.includes("?") ? "&" : "?"}autoplay=1`
+    : null;
+  const minutes = readingTimeMinutes(article.content);
 
   return (
     <div className="min-h-screen bg-white pt-16">
       {/* Hero: embedded video, direct video file, or image */}
-      {article.videoUrl && embedUrl ? (
+      {article.videoUrl && embedSrc ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -66,7 +80,7 @@ export function NewsDetailPage() {
           style={{ paddingTop: "56.25%" }}
         >
           <iframe
-            src={embedUrl}
+            src={embedSrc}
             title={article.title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -106,7 +120,7 @@ export function NewsDetailPage() {
       )}
 
       {/* Article */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -133,27 +147,27 @@ export function NewsDetailPage() {
             {article.title}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-5 text-sm text-slate-500 mb-8 pb-8 border-b border-slate-100">
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500 mb-6">
+            <span className="flex items-center gap-1.5">
               <User size={14} className="text-sky-600" />
-              <span>
-                {t("news.by")} {article.author}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
+              {t("news.by")} {article.author}
+            </span>
+            <span className="flex items-center gap-1.5">
               <Calendar size={14} className="text-sky-600" />
-              <span>{formatDate(article.publishedAt)}</span>
-            </div>
+              {formatDate(article.publishedAt)}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock size={14} className="text-sky-600" />
+              {t("general.minRead", { count: minutes })}
+            </span>
+          </div>
+
+          <div className="pb-8 mb-8 border-b border-slate-100">
+            <ShareButtons title={article.title} />
           </div>
 
           {/* Content */}
-          <div className="prose prose-slate max-w-none">
-            {article.content.split("\n\n").map((paragraph, i) => (
-              <p key={i} className="text-slate-600 leading-relaxed mb-5">
-                {paragraph}
-              </p>
-            ))}
-          </div>
+          <ArticleBody text={article.content} />
 
           {/* Tags */}
           {article.tags.length > 0 && (
@@ -169,6 +183,10 @@ export function NewsDetailPage() {
               ))}
             </div>
           )}
+
+          <div className="mt-10 pt-8 border-t border-slate-100">
+            <ShareButtons title={article.title} />
+          </div>
         </motion.div>
       </div>
 

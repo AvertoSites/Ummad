@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useSubmissions } from "../SubmissionsContext";
 import { useChapters } from "../../chapters/hooks/useChapters";
+import { SegmentedToggle } from "../../../components/shared/SegmentedToggle";
 import { trackArticleSubmit } from "../../../lib/analytics";
 
 const CATEGORIES = [
@@ -296,7 +297,7 @@ export function SubmitArticlePage() {
                     }`}
                   />
                   {errors.authorName && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p role="alert" className="text-xs text-red-600 mt-1">
                       {errors.authorName}
                     </p>
                   )}
@@ -318,7 +319,7 @@ export function SubmitArticlePage() {
                     }`}
                   />
                   {errors.authorEmail && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p role="alert" className="text-xs text-red-600 mt-1">
                       {errors.authorEmail}
                     </p>
                   )}
@@ -352,7 +353,7 @@ export function SubmitArticlePage() {
                     ))}
                   </select>
                   {errors.chapterId && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p role="alert" className="text-xs text-red-600 mt-1">
                       {errors.chapterId}
                     </p>
                   )}
@@ -381,7 +382,7 @@ export function SubmitArticlePage() {
                     ))}
                   </select>
                   {errors.category && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p role="alert" className="text-xs text-red-600 mt-1">
                       {errors.category}
                     </p>
                   )}
@@ -420,7 +421,7 @@ export function SubmitArticlePage() {
                         if (mediaFile)
                           URL.revokeObjectURL(mediaFile.previewUrl);
                         setMediaFile(null);
-                        setMediaSource("");
+                        setMediaSource(next ? "upload" : "");
                         if (fileInputRef.current)
                           fileInputRef.current.value = "";
                       }}
@@ -440,36 +441,38 @@ export function SubmitArticlePage() {
               {form.mediaType !== "" && (
                 <div className="space-y-4">
                   {/* Upload vs URL source */}
-                  <div className="flex gap-2">
-                    {(["upload", "url"] as const).map((src) => {
-                      const Icon = src === "upload" ? UploadCloud : Link2;
-                      return (
-                        <button
-                          key={src}
-                          type="button"
-                          onClick={() => {
-                            setMediaSource(src);
-                            set("mediaUrl", "");
-                            if (mediaFile)
-                              URL.revokeObjectURL(mediaFile.previewUrl);
-                            setMediaFile(null);
-                            if (fileInputRef.current)
-                              fileInputRef.current.value = "";
-                          }}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${
-                            mediaSource === src
-                              ? "bg-slate-900 text-white border-slate-900"
-                              : "bg-white text-slate-500 border-slate-200 hover:border-slate-400 hover:text-slate-700"
-                          }`}
-                        >
-                          <Icon size={13} />
-                          {src === "upload"
-                            ? t("submitArticle.uploadFromDevice")
-                            : t("submitArticle.useUrl")}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <SegmentedToggle<"upload" | "url">
+                    aria-label={t("submitArticle.mediaLabel")}
+                    value={mediaSource || "upload"}
+                    onChange={(src) => {
+                      setMediaSource(src);
+                      set("mediaUrl", "");
+                      if (mediaFile) URL.revokeObjectURL(mediaFile.previewUrl);
+                      setMediaFile(null);
+                      if (fileInputRef.current)
+                        fileInputRef.current.value = "";
+                    }}
+                    options={[
+                      {
+                        value: "upload",
+                        label: (
+                          <>
+                            <UploadCloud size={13} />
+                            {t("submitArticle.uploadFromDevice")}
+                          </>
+                        ),
+                      },
+                      {
+                        value: "url",
+                        label: (
+                          <>
+                            <Link2 size={13} />
+                            {t("submitArticle.useUrl")}
+                          </>
+                        ),
+                      },
+                    ]}
+                  />
 
                   {/* Hidden file input */}
                   <input
@@ -599,7 +602,7 @@ export function SubmitArticlePage() {
                   }`}
                 />
                 {errors.title && (
-                  <p className="text-xs text-red-600 mt-1">{errors.title}</p>
+                  <p role="alert" className="text-xs text-red-600 mt-1">{errors.title}</p>
                 )}
               </div>
               <div>
@@ -623,11 +626,11 @@ export function SubmitArticlePage() {
                 />
                 <div className="flex justify-between mt-1">
                   {errors.excerpt ? (
-                    <p className="text-xs text-red-600">{errors.excerpt}</p>
+                    <p role="alert" className="text-xs text-red-600">{errors.excerpt}</p>
                   ) : (
                     <span />
                   )}
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-500">
                     {form.excerpt.length} {t("submitArticle.chars")}
                   </span>
                 </div>
@@ -650,11 +653,11 @@ export function SubmitArticlePage() {
                 />
                 <div className="flex justify-between mt-1">
                   {errors.content ? (
-                    <p className="text-xs text-red-600">{errors.content}</p>
+                    <p role="alert" className="text-xs text-red-600">{errors.content}</p>
                   ) : (
                     <span />
                   )}
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-500">
                     {form.content.length} {t("submitArticle.chars")}
                   </span>
                 </div>
@@ -674,14 +677,16 @@ export function SubmitArticlePage() {
               </ul>
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 py-3.5 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-xl transition-colors text-base disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              <Send size={18} />
-              {submitting ? "Submitting…" : t("submitArticle.submitBtn")}
-            </button>
+            <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-white/90 backdrop-blur-sm border-t border-slate-200">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 py-3.5 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-xl transition-colors text-base disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                <Send size={18} />
+                {submitting ? "Submitting…" : t("submitArticle.submitBtn")}
+              </button>
+            </div>
           </form>
         )}
       </div>

@@ -23,6 +23,61 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Anchor targets clear the fixed navbar (h-16 = 4rem) */
+:target,
+[id] {
+  scroll-margin-top: 5rem;
+}
+
+/* Visible keyboard focus for every interactive element */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--color-brand-blue, #0369a1);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Skip-to-content link — visible only on focus */
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  background: #fff;
+  color: var(--color-brand-blue, #0369a1);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.15);
+  transform: translateY(-150%);
+  transition: transform 0.15s ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 body {
   margin: 0;
   min-width: 320px;

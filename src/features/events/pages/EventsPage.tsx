@@ -1,34 +1,23 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, CalendarDays } from "lucide-react";
+import { Search, CalendarDays, X } from "lucide-react";
 import { useEvents } from "../hooks/useEvents";
 import { useChapters } from "../../chapters/hooks/useChapters";
 import { EventCard } from "../../../components/shared/EventCard";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.45, delay: i * 0.07, ease: "easeOut" as const },
-  }),
-};
-
-const headerVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, delay: i * 0.12, ease: "easeOut" as const },
-  }),
-};
+import { PageHeader } from "../../../components/shared/PageHeader";
+import { FilterScroller } from "../../../components/shared/FilterScroller";
+import { CardSkeletonGrid } from "../../../components/shared/CardSkeleton";
+import { fadeUp } from "../../../lib/motion";
+import { filterPillClass } from "../../../lib/ui";
+import { getEventTiming } from "../../../utils/event-date";
 
 export function EventsPage() {
   const { t } = useTranslation();
   const { chapters, loading: chaptersLoading } = useChapters();
   const { events, loading: eventsLoading } = useEvents();
   const [activeChapter, setActiveChapter] = useState("all");
+  const [when, setWhen] = useState<"upcoming" | "past" | "all">("upcoming");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filters = [
@@ -36,119 +25,123 @@ export function EventsPage() {
     ...chapters.map((c) => ({ id: c.id, label: c.name })),
   ];
 
-  const filtered = events
-    .filter((e) => activeChapter === "all" || e.chapterId === activeChapter)
-    .filter(
-      (e) =>
-        !searchQuery ||
-        e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        e.description.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return events
+      .filter((e) => activeChapter === "all" || e.chapterId === activeChapter)
+      .filter((e) => {
+        if (when === "all") return true;
+        const past = getEventTiming(e.date, e.endDate).isPast;
+        return when === "past" ? past : !past;
+      })
+      .filter(
+        (e) =>
+          !q ||
+          e.title.toLowerCase().includes(q) ||
+          e.description.toLowerCase().includes(q),
+      );
+  }, [events, activeChapter, when, searchQuery]);
+
+  const hasFilters =
+    activeChapter !== "all" || searchQuery.trim() !== "" || when !== "upcoming";
 
   return (
     <div className="min-h-screen bg-white pt-16">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-sky-700 to-sky-900 text-white py-16 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.p
-            custom={0}
-            initial="hidden"
-            animate="visible"
-            variants={headerVariants}
-            className="text-sky-300 text-sm font-semibold uppercase tracking-wider mb-3"
-          >
-            {t("events.eyebrow")}
-          </motion.p>
-          <motion.h1
-            custom={1}
-            initial="hidden"
-            animate="visible"
-            variants={headerVariants}
-            className="text-3xl sm:text-5xl font-extrabold mb-4"
-          >
-            {t("events.title")}
-          </motion.h1>
-          <motion.p
-            custom={2}
-            initial="hidden"
-            animate="visible"
-            variants={headerVariants}
-            className="text-sky-200 max-w-xl mx-auto"
-          >
-            {t("events.description")}
-          </motion.p>
-
-          {/* Search bar */}
-          <motion.div
-            custom={3}
-            initial="hidden"
-            animate="visible"
-            variants={headerVariants}
-            className="mt-8 max-w-md mx-auto relative"
-          >
-            <Search
-              size={16}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("events.searchPlaceholder")}
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 border-0"
-            />
-          </motion.div>
+      <PageHeader
+        eyebrow={t("events.eyebrow")}
+        title={t("events.title")}
+        description={t("events.description")}
+      >
+        <div className="max-w-md mx-auto relative">
+          <Search
+            size={16}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("events.searchPlaceholder")}
+            aria-label={t("events.searchPlaceholder")}
+            className="w-full pl-10 pr-10 py-3 rounded-xl bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 border-0"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label={t("general.close")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 rounded-md p-1"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
-      </div>
+      </PageHeader>
 
       {/* Filters */}
       <div className="sticky top-16 z-30 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-2 overflow-x-auto">
-          {chaptersLoading
-            ? [1, 2, 3].map((n) => (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {chaptersLoading ? (
+            <div className="flex items-center gap-2 py-3">
+              {[1, 2, 3].map((n) => (
                 <div
                   key={n}
                   className="flex-shrink-0 h-9 w-24 bg-slate-100 rounded-full animate-pulse"
                 />
-              ))
-            : filters.map((f, i) => (
-                <motion.button
+              ))}
+            </div>
+          ) : (
+            <FilterScroller>
+              {(["upcoming", "past", "all"] as const).map((w) => (
+                <button
+                  key={w}
+                  onClick={() => setWhen(w)}
+                  className={filterPillClass(when === w)}
+                >
+                  {t(`events.${w}`)}
+                </button>
+              ))}
+              <span className="flex-shrink-0 w-px h-6 bg-slate-200 mx-1" />
+              {filters.map((f) => (
+                <button
                   key={f.id}
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05, duration: 0.3 }}
                   onClick={() => setActiveChapter(f.id)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    activeChapter === f.id
-                      ? "bg-sky-700 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
+                  className={filterPillClass(activeChapter === f.id)}
                 >
                   {f.label}
-                </motion.button>
+                </button>
               ))}
+            </FilterScroller>
+          )}
         </div>
       </div>
 
       {/* Events grid */}
       <section className="py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {eventsLoading ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <div
-                  key={n}
-                  className="bg-slate-100 rounded-xl overflow-hidden animate-pulse"
+          {!eventsLoading && (
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <p className="text-sm text-slate-500">
+                {t("general.results", { count: filtered.length })}
+              </p>
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveChapter("all");
+                    setSearchQuery("");
+                    setWhen("upcoming");
+                  }}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-700 hover:text-sky-800"
                 >
-                  <div className="aspect-video bg-slate-200" />
-                  <div className="p-5 space-y-2">
-                    <div className="h-3 bg-slate-200 rounded w-1/3" />
-                    <div className="h-4 bg-slate-200 rounded w-5/6" />
-                    <div className="h-3 bg-slate-200 rounded w-full" />
-                  </div>
-                </div>
-              ))}
+                  <X size={14} /> {t("general.clearFilters")}
+                </button>
+              )}
             </div>
+          )}
+
+          {eventsLoading ? (
+            <CardSkeletonGrid count={6} />
           ) : filtered.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -158,7 +151,7 @@ export function EventsPage() {
             >
               <CalendarDays size={48} className="mx-auto mb-4 opacity-30" />
               <p className="font-medium">
-                {searchQuery || activeChapter !== "all"
+                {hasFilters
                   ? "No events found matching your search."
                   : "No events scheduled yet."}
               </p>
@@ -166,7 +159,7 @@ export function EventsPage() {
           ) : (
             <AnimatePresence mode="wait">
               <motion.div
-                key={activeChapter + searchQuery}
+                key={activeChapter + searchQuery + when}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

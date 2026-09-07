@@ -121,6 +121,8 @@ const en = {
       viewAll: "View All News",
       by: "By",
       relatedNews: "Related Articles",
+      searchPlaceholder: "Search articles...",
+      noResults: "No articles match your search.",
     },
     // Events
     events: {
@@ -129,12 +131,21 @@ const en = {
       description:
         "Community events, fundraisers, and workshops from all UMAD chapters.",
       register: "Register",
+      rsvp: "RSVP for this event",
       learnMore: "Learn More",
       allChapters: "All Chapters",
       location: "Location",
       date: "Date",
       viewAll: "View All Events",
       searchPlaceholder: "Search events...",
+      today: "Today",
+      tomorrow: "Tomorrow",
+      inDays: "In {{count}} days",
+      ongoing: "Happening now",
+      ended: "Ended",
+      upcoming: "Upcoming",
+      past: "Past",
+      all: "All",
     },
     // Get Involved
     involved: {
@@ -225,6 +236,14 @@ const en = {
       loading: "Loading...",
       notFound: "Page not found",
       backHome: "Back to Home",
+      skipToContent: "Skip to content",
+      results_one: "{{count}} result",
+      results_other: "{{count}} results",
+      clearFilters: "Clear filters",
+      share: "Share",
+      copyLink: "Copy link",
+      linkCopied: "Link copied",
+      minRead: "{{count}} min read",
     },
     // About Page (extended)
     aboutPage: {

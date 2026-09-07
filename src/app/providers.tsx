@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { BrowserRouter } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../lib/query-client";
 import { SubmissionsProvider } from "../features/submit/SubmissionsContext";
@@ -18,11 +19,13 @@ export function AppProviders({ children }: PropsWithChildren) {
   return (
     <QueryClientProvider client={queryClient}>
       <SubmissionsProvider>
-        <BrowserRouter>
-          <PageTracker />
-          {children}
-          <BilingualToast />
-        </BrowserRouter>
+        <MotionConfig reducedMotion="user">
+          <BrowserRouter>
+            <PageTracker />
+            {children}
+            <BilingualToast />
+          </BrowserRouter>
+        </MotionConfig>
       </SubmissionsProvider>
     </QueryClientProvider>
   );

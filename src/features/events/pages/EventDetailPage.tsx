@@ -5,7 +5,10 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, MapPin, Users, Clock } from "lucide-react";
 import { useEventBySlug } from "../hooks/useEvents";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
+import { ShareButtons } from "../../../components/shared/ShareButtons";
 import { formatDate } from "../../../utils/format-date";
+import { getEventTiming, eventTimingLabel } from "../../../utils/event-date";
+import { siteConfig } from "../../../config/site";
 import { trackEventView } from "../../../lib/analytics";
 
 export function EventDetailPage() {
@@ -31,6 +34,14 @@ export function EventDetailPage() {
     );
   }
   if (!event) return <Navigate to="/events" replace />;
+
+  const timing = getEventTiming(event.date, event.endDate);
+  const timingLabel = eventTimingLabel(timing, t);
+  const rsvpHref =
+    event.registrationUrl ||
+    `mailto:${siteConfig.contact.email}?subject=${encodeURIComponent(
+      `RSVP: ${event.title}`,
+    )}`;
 
   return (
     <div className="min-h-screen bg-white pt-16">
@@ -63,6 +74,17 @@ export function EventDetailPage() {
               <ArrowLeft size={14} /> {t("events.eyebrow")}
             </Link>
             <div className="flex flex-wrap gap-2 mb-3">
+              <span
+                className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                  timing.isPast
+                    ? "bg-slate-600 text-white"
+                    : timing.isOngoing
+                      ? "bg-green-600 text-white"
+                      : "bg-white text-slate-900"
+                }`}
+              >
+                {timingLabel}
+              </span>
               <span className="px-3 py-1 bg-amber-500 text-white text-xs font-semibold rounded-full">
                 {event.category}
               </span>
@@ -192,13 +214,20 @@ export function EventDetailPage() {
                 </div>
               )}
 
-              <div className="pt-2">
-                <a
-                  href={`mailto:${event.chapterId}@umad.org`}
-                  className="block w-full text-center py-3 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-xl transition-colors text-sm"
-                >
-                  {t("events.register")}
-                </a>
+              <div className="pt-2 space-y-3">
+                {!timing.isPast && (
+                  <a
+                    href={rsvpHref}
+                    target={event.registrationUrl ? "_blank" : undefined}
+                    rel={
+                      event.registrationUrl ? "noopener noreferrer" : undefined
+                    }
+                    className="block w-full text-center py-3 bg-sky-700 hover:bg-sky-800 text-white font-semibold rounded-xl transition-colors text-sm"
+                  >
+                    {t("events.rsvp")}
+                  </a>
+                )}
+                <ShareButtons title={event.title} />
               </div>
             </div>
           </motion.div>

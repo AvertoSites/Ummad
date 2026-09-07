@@ -21,13 +21,18 @@ import {
 import { useChapters } from "../../chapters/hooks/useChapters";
 import { useNews } from "../hooks/useNews";
 import { useEvents } from "../../events/hooks/useEvents";
-import { NewsCard } from "../../../components/shared/NewsCard";
 import { EventCard } from "../../../components/shared/EventCard";
 import { ChapterCard } from "../../../components/shared/ChapterCard";
 import { CardVideo } from "../../../components/shared/CardVideo";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
+import {
+  CardSkeleton,
+  CardSkeletonGrid,
+} from "../../../components/shared/CardSkeleton";
 import { formatDate } from "../../../utils/format-date";
+import { getEventTiming } from "../../../utils/event-date";
 import { isDirectVideoFile } from "../../../utils/video";
+import { siteConfig } from "../../../config/site";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -99,9 +104,10 @@ export function HomePage() {
     featuredArticle?.videoUrl && isDirectVideoFile(featuredArticle.videoUrl)
       ? featuredArticle.videoUrl
       : null;
-  const secondaryNews = articles.slice(1, 10);
-  const latestNews = articles.slice(1, 4);
-  const upcomingEvents = events.slice(0, 3);
+  const secondaryNews = articles.slice(1, 7);
+  const upcomingEvents = events
+    .filter((e) => !getEventTiming(e.date, e.endDate).isPast)
+    .slice(0, 3);
 
   const [aboutSlideIndex, setAboutSlideIndex] = useState(0);
   useEffect(() => {
@@ -120,17 +126,20 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <h1 className="sr-only">
+        UMAD — {t("hero.headline")}
+      </h1>
       {/* ── TOP STORY ── */}
       <section className="bg-slate-50 pt-24 sm:pt-28 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {/* Featured story — large box */}
             <motion.div
               initial="hidden"
               animate="visible"
               custom={0}
               variants={fadeUp}
-              className="lg:col-span-2"
+              className="md:col-span-2"
             >
               <Link
                 to={featuredArticle ? `/news/${featuredArticle.slug}` : "/news"}
@@ -215,7 +224,7 @@ export function HomePage() {
               animate="visible"
               custom={1}
               variants={fadeUp}
-              className="lg:col-span-1"
+              className="md:col-span-1"
             >
               <div className="relative flex flex-col h-full min-h-[380px] sm:min-h-[460px] rounded-3xl overflow-hidden shadow-lg">
                 <div className="absolute inset-0">
@@ -298,7 +307,7 @@ export function HomePage() {
                   </div>
                 ))
               ) : secondaryNews.length === 0 ? (
-                <div className="col-span-full text-center py-10 text-slate-400">
+                <div className="col-span-full text-center py-10 text-slate-500">
                   <p className="font-medium">
                     No more articles yet — check back soon.
                   </p>
@@ -341,21 +350,25 @@ export function HomePage() {
                           ) : (
                             <MediaPlaceholder className="w-full h-full" size="sm" />
                           )}
-                          {article.videoUrl && (
+                          {previewVideo ? (
+                            <span className="absolute bottom-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-900/70 text-white backdrop-blur-sm pointer-events-none">
+                              <PlayCircle size={13} />
+                            </span>
+                          ) : article.videoUrl ? (
                             <div className="absolute inset-0 flex items-center justify-center bg-slate-900/25 group-hover:bg-slate-900/35 transition-colors pointer-events-none">
                               <PlayCircle size={36} className="text-white drop-shadow-lg" />
                             </div>
-                          )}
+                          ) : null}
                         </div>
                         <div className="flex flex-col flex-1 p-4">
                           <span className="text-[10px] font-semibold text-sky-700 uppercase tracking-wide mb-1.5">
                             {article.category}
                           </span>
-                          <h4 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-sky-700 transition-colors mb-3">
+                          <h3 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-sky-700 transition-colors mb-3">
                             {article.title}
-                          </h4>
-                          <div className="mt-auto flex items-center justify-between pt-2 border-t border-slate-50">
-                            <span className="text-xs text-slate-400">
+                          </h3>
+                          <div className="mt-auto flex items-center justify-between pt-2 border-t border-slate-100">
+                            <span className="text-xs text-slate-500">
                               {formatDate(article.publishedAt)}
                             </span>
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700">
@@ -627,24 +640,14 @@ export function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {chaptersLoading ? (
               [1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className="bg-slate-100 rounded-2xl overflow-hidden animate-pulse"
-                >
-                  <div className="aspect-video bg-slate-200" />
-                  <div className="p-6 space-y-3">
-                    <div className="h-3 bg-slate-200 rounded w-1/3" />
-                    <div className="h-5 bg-slate-200 rounded w-3/4" />
-                    <div className="h-3 bg-slate-200 rounded w-full" />
-                  </div>
-                </div>
+                <CardSkeleton key={n} />
               ))
             ) : chapters.length === 0 ? (
               <div className="col-span-full text-center py-16">
-                <p className="text-slate-400 font-medium">
+                <p className="text-slate-500 font-medium">
                   No chapters at this time — check back soon.
                 </p>
               </div>
@@ -659,71 +662,6 @@ export function HomePage() {
                   variants={fadeUp}
                 >
                   <ChapterCard chapter={chapter} />
-                </motion.div>
-              ))
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── LATEST NEWS ── */}
-      <section id="latest-news" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-            className="flex items-end justify-between mb-10 flex-wrap gap-4"
-          >
-            <div>
-              <p className="text-sm font-semibold text-sky-700 uppercase tracking-wider mb-2">
-                {t("news.eyebrow")}
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">
-                {t("news.title")}
-              </h2>
-            </div>
-            <Link
-              to="/news"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-sky-700 hover:text-sky-800"
-            >
-              {t("news.viewAll")} <ArrowRight size={16} />
-            </Link>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {newsLoading ? (
-              [1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className="bg-slate-100 rounded-xl overflow-hidden animate-pulse"
-                >
-                  <div className="aspect-video bg-slate-200" />
-                  <div className="p-5 space-y-2">
-                    <div className="h-3 bg-slate-200 rounded w-1/3" />
-                    <div className="h-4 bg-slate-200 rounded w-5/6" />
-                    <div className="h-3 bg-slate-200 rounded w-full" />
-                  </div>
-                </div>
-              ))
-            ) : latestNews.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-slate-400">
-                <p className="font-medium">
-                  No articles published yet — check back soon.
-                </p>
-              </div>
-            ) : (
-              latestNews.map((article, i) => (
-                <motion.div
-                  key={article.id}
-                  custom={i}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  variants={fadeUp}
-                >
-                  <NewsCard article={article} />
                 </motion.div>
               ))
             )}
@@ -757,29 +695,17 @@ export function HomePage() {
             </Link>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {eventsLoading ? (
-              [1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className="bg-slate-100 rounded-xl overflow-hidden animate-pulse"
-                >
-                  <div className="aspect-video bg-slate-200" />
-                  <div className="p-5 space-y-2">
-                    <div className="h-3 bg-slate-200 rounded w-1/3" />
-                    <div className="h-4 bg-slate-200 rounded w-5/6" />
-                    <div className="h-3 bg-slate-200 rounded w-full" />
-                  </div>
-                </div>
-              ))
-            ) : upcomingEvents.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-slate-400">
-                <p className="font-medium">
-                  No upcoming events — check back soon.
-                </p>
-              </div>
-            ) : (
-              upcomingEvents.map((event, i) => (
+          {eventsLoading ? (
+            <CardSkeletonGrid count={3} className="grid md:grid-cols-3 gap-8" />
+          ) : upcomingEvents.length === 0 ? (
+            <div className="text-center py-12 text-slate-500">
+              <p className="font-medium">
+                No upcoming events — check back soon.
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-8">
+              {upcomingEvents.map((event, i) => (
                 <motion.div
                   key={event.id}
                   custom={i}
@@ -790,9 +716,9 @@ export function HomePage() {
                 >
                   <EventCard event={event} />
                 </motion.div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -819,16 +745,26 @@ export function HomePage() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <a
-                href="mailto:info.ummad26@gmail.com"
-                className="px-7 py-3 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-colors"
+                href={`mailto:${siteConfig.contact.email}?subject=${encodeURIComponent(
+                  "Donation enquiry — UMAD",
+                )}`}
+                className="px-7 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors shadow-sm"
               >
-                {t("involved.contact")}
+                {t("involved.donate")}
+              </a>
+              <a
+                href={`mailto:${siteConfig.contact.email}?subject=${encodeURIComponent(
+                  "Volunteering with UMAD",
+                )}`}
+                className="px-7 py-3 bg-white text-sky-800 font-semibold rounded-xl hover:bg-sky-50 transition-colors"
+              >
+                {t("involved.volunteer")}
               </a>
               <Link
                 to="/#contact"
-                className="px-7 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"
+                className="px-7 py-3 bg-white/10 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-colors"
               >
-                {t("involved.donate")}
+                {t("involved.contact")}
               </Link>
             </div>
           </motion.div>

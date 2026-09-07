@@ -121,6 +121,8 @@ const so = {
       viewAll: "Dhammaan Wararka Arag",
       by: "Qoray",
       relatedNews: "Maqaallada La xiriira",
+      searchPlaceholder: "Maqaallada baadh...",
+      noResults: "Ma jiro maqaal u dhigma raadintaada.",
     },
     // Events
     events: {
@@ -129,12 +131,21 @@ const so = {
       description:
         "Dhacdooyinka bulshada, ururinta lacagta, iyo warshado dhammaan xarumaha UMAD.",
       register: "Is Diiwaan Geli",
+      rsvp: "Dhacdadan is-diiwaan-geli",
       learnMore: "Wax Dheeraad ah",
       allChapters: "Dhammaan Xarumaha",
       location: "Goobta",
       date: "Taariikhda",
       viewAll: "Dhammaan Dhacdooyinka Arag",
       searchPlaceholder: "Dhacdooyinka Baadh...",
+      today: "Maanta",
+      tomorrow: "Berri",
+      inDays: "{{count}} maalmood gudahood",
+      ongoing: "Hadda socda",
+      ended: "Dhammaaday",
+      upcoming: "Soo socda",
+      past: "Hore",
+      all: "Dhammaan",
     },
     // Get Involved
     involved: {
@@ -225,6 +236,14 @@ const so = {
       loading: "Waa la rarayo...",
       notFound: "Bogga lama helin",
       backHome: "Bogga Hore u Noqo",
+      skipToContent: "U bood nuxurka",
+      results_one: "{{count}} natiijo",
+      results_other: "{{count}} natiijo",
+      clearFilters: "Nadiifi shaandhaynta",
+      share: "Wadaag",
+      copyLink: "Koobiye link-ga",
+      linkCopied: "Link-gii waa la koobiyeeyay",
+      minRead: "{{count}} daqiiqo akhris",
     },
     // About Page (extended)
     aboutPage: {

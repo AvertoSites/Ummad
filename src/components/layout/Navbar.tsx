@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Menu, X, Globe, ChevronDown, MapPin, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,15 +10,27 @@ const LANGUAGES = [
   { code: "so", label: "Soomaali" },
 ];
 
+const linkClass = ({ isActive }: { isActive: boolean }) =>
+  `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+    isActive
+      ? "text-sky-700 bg-sky-50"
+      : "text-slate-600 hover:text-sky-700 hover:bg-slate-50"
+  }`;
+
 export function Navbar() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [chaptersOpen, setChaptersOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { chapters } = useChapters();
 
+  const chaptersRef = useRef<HTMLDivElement>(null);
+  const langRef = useRef<HTMLDivElement>(null);
+
   const navLinks = [
-    { label: t("nav.home"), href: "/" },
+    { label: t("nav.home"), href: "/", end: true },
     { label: t("nav.about"), href: "/about" },
     { label: t("nav.news"), href: "/news" },
     { label: t("nav.events"), href: "/events" },
@@ -27,22 +39,76 @@ export function Navbar() {
   const currentLang =
     LANGUAGES.find((l) => l.code === i18n.language) ?? LANGUAGES[0];
 
+  // Solidify the bar once the page is scrolled
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Close any open menu when the route changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMobileOpen(false);
+    setChaptersOpen(false);
+    setLangOpen(false);
+  }, [location.pathname]);
+
+  // Close dropdowns on outside click / Escape
+  useEffect(() => {
+    if (!chaptersOpen && !langOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (
+        chaptersOpen &&
+        chaptersRef.current &&
+        !chaptersRef.current.contains(e.target as Node)
+      )
+        setChaptersOpen(false);
+      if (
+        langOpen &&
+        langRef.current &&
+        !langRef.current.contains(e.target as Node)
+      )
+        setLangOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setChaptersOpen(false);
+        setLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [chaptersOpen, langOpen]);
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b transition duration-200 ${
+        scrolled
+          ? "bg-white shadow-md border-slate-200"
+          : "bg-white/90 border-transparent"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 flex-shrink-0">
+          <Link
+            to="/"
+            className="flex items-center gap-3 flex-shrink-0 rounded-md"
+          >
             <img
               src="/images/logo.png"
               alt="UMAD logo"
               className="w-10 h-10 object-contain rounded-full"
             />
-            <div>
-              <p className="font-bold text-slate-900 text-base leading-tight">
-                UMAD
-              </p>
-              <p className="text-xs text-sky-700 leading-tight hidden sm:block">
+            <div className="leading-tight">
+              <p className="font-bold text-slate-900 text-base">UMAD</p>
+              <p className="text-xs text-sky-700 hidden sm:block">
                 Ururka Midnimada Adal
               </p>
             </div>
@@ -50,18 +116,12 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-1">
-            {/* Home + About */}
             {navLinks.slice(0, 2).map((link) => (
               <NavLink
                 key={link.href}
                 to={link.href}
-                className={({ isActive }) =>
-                  `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive && link.href === "/"
-                      ? "text-sky-700 bg-sky-50"
-                      : "text-slate-600 hover:text-sky-700 hover:bg-slate-50"
-                  }`
-                }
+                end={link.end}
+                className={linkClass}
               >
                 {link.label}
               </NavLink>
@@ -69,28 +129,31 @@ export function Navbar() {
 
             {/* Chapters dropdown */}
             <div
+              ref={chaptersRef}
               className="relative"
               onMouseEnter={() => setChaptersOpen(true)}
               onMouseLeave={() => setChaptersOpen(false)}
             >
-              <NavLink
-                to="/chapters"
-                className={({ isActive }) =>
-                  `inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive
-                      ? "text-sky-700 bg-sky-50"
-                      : "text-slate-600 hover:text-sky-700 hover:bg-slate-50"
-                  }`
-                }
-              >
-                {t("nav.chapters")}
-                <ChevronDown
-                  size={13}
-                  className={`transition-transform duration-200 ${
-                    chaptersOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </NavLink>
+              <div className="flex items-center">
+                <NavLink to="/chapters" className={linkClass}>
+                  {t("nav.chapters")}
+                </NavLink>
+                <button
+                  type="button"
+                  aria-label={t("nav.chapters")}
+                  aria-expanded={chaptersOpen}
+                  aria-haspopup="true"
+                  onClick={() => setChaptersOpen((v) => !v)}
+                  className="p-1.5 -ml-1 rounded-md text-slate-500 hover:text-sky-700 hover:bg-slate-50"
+                >
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${
+                      chaptersOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              </div>
               <AnimatePresence>
                 {chaptersOpen && (
                   <motion.div
@@ -101,7 +164,6 @@ export function Navbar() {
                     className="absolute left-0 top-full pt-1 w-56"
                   >
                     <div className="bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-                      {/* All chapters link */}
                       <Link
                         to="/chapters"
                         className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-sky-700 hover:bg-sky-50 border-b border-slate-100 transition-colors"
@@ -130,7 +192,7 @@ export function Navbar() {
                               <p className="text-sm font-medium text-slate-900">
                                 {chapter.name}
                               </p>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-xs text-slate-500">
                                 {chapter.location}
                               </p>
                             </div>
@@ -143,20 +205,11 @@ export function Navbar() {
               </AnimatePresence>
             </div>
 
-            {/* Remaining links */}
             {navLinks.slice(2).map((link) => (
               <NavLink
                 key={link.href}
                 to={link.href}
-                className={({ isActive }) =>
-                  `px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive &&
-                    link.href !== "/#programs" &&
-                    link.href !== "/#contact"
-                      ? "text-sky-700 bg-sky-50"
-                      : "text-slate-600 hover:text-sky-700 hover:bg-slate-50"
-                  }`
-                }
+                className={linkClass}
               >
                 {link.label}
               </NavLink>
@@ -165,12 +218,13 @@ export function Navbar() {
 
           {/* Right side: Language + CTA */}
           <div className="hidden lg:flex items-center gap-3">
-            {/* Language Switcher */}
-            <div className="relative">
+            <div ref={langRef} className="relative">
               <button
-                onClick={() => setLangOpen(!langOpen)}
+                onClick={() => setLangOpen((v) => !v)}
                 className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 hover:text-sky-700 rounded-md hover:bg-slate-50 transition-colors"
                 aria-label="Switch language"
+                aria-expanded={langOpen}
+                aria-haspopup="true"
               >
                 <Globe size={16} />
                 <span>{currentLang.label}</span>
@@ -211,7 +265,7 @@ export function Navbar() {
 
             <Link
               to="/article"
-              className="px-4 py-2 border border-sky-700 text-sky-700 text-sm font-semibold rounded-lg hover:bg-sky-50 transition-colors inline-flex items-center gap-1.5"
+              className="px-4 py-2 bg-sky-700 text-white text-sm font-semibold rounded-lg hover:bg-sky-800 transition-colors inline-flex items-center gap-1.5 shadow-sm"
             >
               <PenLine size={14} />
               {t("nav.shareArticle")}
@@ -223,6 +277,7 @@ export function Navbar() {
             className="lg:hidden p-2 rounded-md text-slate-600 hover:text-sky-700 hover:bg-slate-50"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -249,7 +304,6 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              {/* Chapters group in mobile */}
               <div className="pt-1">
                 <p className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">
                   {t("nav.chapters")}
@@ -294,12 +348,13 @@ export function Navbar() {
                   </button>
                 ))}
               </div>
-              <div className="pt-2 flex flex-col gap-2">
+              <div className="pt-2">
                 <Link
                   to="/article"
                   onClick={() => setMobileOpen(false)}
-                  className="block text-center px-4 py-2.5 border border-sky-700 text-sky-700 text-sm font-semibold rounded-lg hover:bg-sky-50 transition-colors"
+                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-sky-700 text-white text-sm font-semibold rounded-lg hover:bg-sky-800 transition-colors"
                 >
+                  <PenLine size={14} />
                   {t("nav.shareArticle")}
                 </Link>
               </div>
