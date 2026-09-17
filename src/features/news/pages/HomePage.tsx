@@ -120,7 +120,7 @@ function TopStoryCard({
     >
       <Link
         to={article ? `/news/${article.slug}` : "/news"}
-        className="group relative flex flex-col justify-end min-h-[320px] sm:min-h-[460px] h-full rounded-3xl overflow-hidden shadow-lg bg-slate-800"
+        className="group relative flex flex-col justify-end min-h-[300px] sm:min-h-[340px] lg:min-h-[380px] h-full rounded-3xl overflow-hidden shadow-lg bg-slate-800"
       >
         {loading ? (
           <div className="absolute inset-0 bg-slate-200 animate-pulse" />
@@ -232,7 +232,7 @@ export function HomePage() {
       {/* ── TOP STORY ── */}
       <section className="bg-slate-50 pt-24 sm:pt-28 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-5">
             {/* Two top stories — equal-width boxes */}
             <TopStoryCard
               article={featuredArticle}
@@ -253,7 +253,7 @@ export function HomePage() {
               variants={fadeUp}
               className="md:col-span-1"
             >
-              <div className="relative flex flex-col h-full min-h-[320px] sm:min-h-[460px] rounded-3xl overflow-hidden shadow-lg">
+              <div className="relative flex flex-col h-full min-h-[300px] sm:min-h-[340px] lg:min-h-[380px] rounded-3xl overflow-hidden shadow-lg">
                 <div className="absolute inset-0">
                   <AnimatePresence mode="sync">
                     <motion.img
