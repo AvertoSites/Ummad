@@ -107,7 +107,7 @@ export function Navbar() {
               className="w-10 h-10 object-contain rounded-full"
             />
             <div className="leading-tight">
-              <p className="font-bold text-slate-900 text-base">UMAD</p>
+              <p className="font-bold text-slate-900 text-[32px] leading-tight">UMAD</p>
               <p className="text-xs text-sky-700 hidden sm:block">
                 Ururka Midnimada Adal
               </p>
