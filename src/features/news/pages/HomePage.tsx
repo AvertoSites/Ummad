@@ -95,14 +95,16 @@ const programs = [
   },
 ];
 
-function TopStoryCard({
+function NewsTile({
   article,
   loading,
   animationIndex,
+  featured = false,
 }: {
   article?: NewsArticleData;
   loading: boolean;
   animationIndex: number;
+  featured?: boolean;
 }) {
   const { t } = useTranslation();
   const previewVideo =
@@ -110,87 +112,77 @@ function TopStoryCard({
       ? article.videoUrl
       : null;
 
+  if (loading) {
+    return (
+      <div className="h-full bg-white rounded-xl overflow-hidden border border-slate-100 animate-pulse">
+        <div className="aspect-[16/10] bg-slate-200" />
+        <div className="p-2.5 space-y-1.5">
+          <div className="h-2 bg-slate-200 rounded w-1/3" />
+          <div className="h-3 bg-slate-200 rounded w-full" />
+          <div className="h-3 bg-slate-200 rounded w-2/3" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial="hidden"
-      animate="visible"
+      whileInView="visible"
+      viewport={{ once: true }}
       custom={animationIndex}
       variants={fadeUp}
       className="h-full"
     >
       <Link
         to={article ? `/news/${article.slug}` : "/news"}
-        className="group relative flex flex-col justify-end min-h-[300px] sm:min-h-[340px] lg:min-h-[380px] h-full rounded-3xl overflow-hidden shadow-lg bg-slate-800"
+        className="group flex flex-col h-full bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-lg hover:border-sky-200 hover:-translate-y-1 transition-all duration-300"
       >
-        {loading ? (
-          <div className="absolute inset-0 bg-slate-200 animate-pulse" />
-        ) : article?.image ? (
-          <img
-            src={article.image}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : previewVideo ? (
-          <>
-            <MediaPlaceholder className="absolute inset-0" size="lg" />
-            <CardVideo
-              src={previewVideo}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        <div className="aspect-[16/10] overflow-hidden relative bg-gradient-to-br from-sky-50 to-slate-100">
+          {article?.image ? (
+            <img
+              src={article.image}
+              alt=""
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
-          </>
-        ) : (
-          <MediaPlaceholder className="absolute inset-0" size="lg" />
-        )}
-        {!loading && article?.videoUrl && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/15 group-hover:bg-slate-900/25 transition-colors pointer-events-none">
-            <PlayCircle size={52} className="text-white drop-shadow-lg" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent" />
-        <div className="relative z-10 p-5 sm:p-7">
-          {loading ? (
-            <div className="space-y-3">
-              <div className="h-4 w-20 bg-white/20 rounded-full" />
-              <div className="h-6 w-3/4 bg-white/20 rounded" />
-              <div className="h-4 w-full bg-white/10 rounded" />
-            </div>
-          ) : (
+          ) : previewVideo ? (
             <>
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 bg-amber-400 text-slate-900 rounded-full uppercase tracking-wider">
-                  <Star size={11} className="fill-slate-900" />
-                  {t("news.topStory")}
-                </span>
-                {article?.category && (
-                  <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-1 bg-white/15 text-white rounded-full uppercase tracking-wide backdrop-blur-sm">
-                    {article.category}
-                  </span>
-                )}
-              </div>
-              <h2 className="text-xl sm:text-2xl lg:text-[26px] font-extrabold text-white leading-tight mb-2.5">
-                {article?.title ?? t("hero.headline")}
-              </h2>
-              <p className="text-slate-200 text-sm leading-relaxed mb-4 line-clamp-2">
-                {article?.excerpt ?? t("hero.subheadline")}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-slate-300">
-                {article ? (
-                  <>
-                    <span className="font-medium">{article.chapterName}</span>
-                    <span className="w-1 h-1 rounded-full bg-slate-400" />
-                    <span className="inline-flex items-center gap-1.5">
-                      <Calendar size={12} />
-                      {formatDate(article.publishedAt)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-sky-300">
-                    {t("news.viewAll")} <ArrowRight size={13} />
-                  </span>
-                )}
-              </div>
+              <MediaPlaceholder className="absolute inset-0" size="sm" />
+              <CardVideo
+                src={previewVideo}
+                className="relative w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
             </>
+          ) : (
+            <MediaPlaceholder className="w-full h-full" size="sm" />
           )}
+          {featured && (
+            <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 bg-amber-400 text-slate-900 rounded-full uppercase tracking-wide">
+              <Star size={8} className="fill-slate-900" />
+              {t("news.topStory")}
+            </span>
+          )}
+          {previewVideo ? (
+            <span className="absolute bottom-1.5 right-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900/70 text-white backdrop-blur-sm pointer-events-none">
+              <PlayCircle size={11} />
+            </span>
+          ) : article?.videoUrl ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/25 group-hover:bg-slate-900/35 transition-colors pointer-events-none">
+              <PlayCircle size={26} className="text-white drop-shadow-lg" />
+            </div>
+          ) : null}
+        </div>
+        <div className="flex flex-col flex-1 p-2.5">
+          <span className="text-[9px] font-semibold text-sky-700 uppercase tracking-wide mb-1 truncate">
+            {article?.category ?? t("news.viewAll")}
+          </span>
+          <h3 className="text-xs font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-sky-700 transition-colors">
+            {article?.title ?? t("hero.headline")}
+          </h3>
+          <div className="mt-auto flex items-center gap-1 pt-1.5 text-[10px] text-slate-400">
+            <Calendar size={9} />
+            {article ? formatDate(article.publishedAt) : t("news.viewAll")}
+          </div>
         </div>
       </Link>
     </motion.div>
@@ -229,31 +221,67 @@ export function HomePage() {
       <h1 className="sr-only">
         UMAD — {t("hero.headline")}
       </h1>
-      {/* ── TOP STORY ── */}
+      {/* ── LATEST NEWS ── */}
       <section className="bg-slate-50 pt-24 sm:pt-28 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-5">
-            {/* Two top stories — equal-width boxes */}
-            <TopStoryCard
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4 }}
+            className="flex items-center justify-between mb-5"
+          >
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
+              Latest News
+            </h3>
+            <Link
+              to="/news"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-700 hover:text-sky-800"
+            >
+              {t("news.viewAll")} <ArrowRight size={14} />
+            </Link>
+          </motion.div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* Two top stories */}
+            <NewsTile
               article={featuredArticle}
               loading={newsLoading}
               animationIndex={0}
+              featured
             />
-            <TopStoryCard
+            <NewsTile
               article={secondFeaturedArticle}
               loading={newsLoading}
               animationIndex={1}
+              featured
             />
 
-            {/* About the site — small box */}
+            {newsLoading ? (
+              Array.from({ length: 6 }).map((_, n) => (
+                <NewsTile key={n} loading animationIndex={n + 2} />
+              ))
+            ) : (
+              secondaryNews.map((article, i) => (
+                <NewsTile
+                  key={article.id}
+                  article={article}
+                  loading={false}
+                  animationIndex={i + 2}
+                />
+              ))
+            )}
+
+            {/* About the site — last tile */}
             <motion.div
               initial="hidden"
-              animate="visible"
-              custom={2}
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={2 + (newsLoading ? 6 : secondaryNews.length)}
               variants={fadeUp}
-              className="md:col-span-1"
+              className="h-full"
             >
-              <div className="relative flex flex-col h-full min-h-[300px] sm:min-h-[340px] lg:min-h-[380px] rounded-3xl overflow-hidden shadow-lg">
+              <div className="relative flex flex-col h-full rounded-xl overflow-hidden shadow-sm">
                 <div className="absolute inset-0">
                   <AnimatePresence mode="sync">
                     <motion.img
@@ -269,151 +297,29 @@ export function HomePage() {
                   </AnimatePresence>
                   <div className="absolute inset-0 bg-gradient-to-b from-sky-900/85 via-sky-900/80 to-slate-950/90" />
                 </div>
-                <div className="relative z-10 flex flex-col h-full p-8">
-                  <p className="text-sky-300 font-semibold tracking-widest text-xs uppercase mb-4">
+                <div className="relative z-10 flex flex-col h-full p-2.5">
+                  <p className="text-sky-300 font-semibold tracking-widest text-[8px] uppercase mb-1">
                     {t("hero.tagline")}
                   </p>
-                  <h3 className="text-2xl font-extrabold text-white leading-snug mb-4">
+                  <h3 className="text-xs font-bold text-white leading-snug line-clamp-2">
                     {t("hero.headline")}
                   </h3>
-                  <p className="text-sky-100/80 text-sm leading-relaxed mb-8">
-                    {t("hero.subheadline")}
-                  </p>
-                  <div className="mt-auto flex flex-col gap-3">
-                    <Link
-                      to="/about"
-                      className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white text-sky-800 font-semibold rounded-xl hover:bg-sky-50 transition-colors text-sm"
-                    >
-                      {t("hero.ctaLearnMore")} <ArrowRight size={15} />
-                    </Link>
-                    <Link
-                      to="/chapters"
-                      className="inline-flex items-center justify-center gap-2 px-5 py-3 border border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors text-sm"
-                    >
-                      {t("hero.ctaChapters")}
-                    </Link>
-                  </div>
+                  <Link
+                    to="/about"
+                    className="mt-auto inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-white text-sky-800 font-semibold rounded-lg hover:bg-sky-50 transition-colors text-[10px]"
+                  >
+                    {t("hero.ctaLearnMore")} <ArrowRight size={10} />
+                  </Link>
                 </div>
               </div>
             </motion.div>
           </div>
 
-          {/* More headlines — small news boxes */}
-          <div className="mt-10">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4 }}
-              className="flex items-center justify-between mb-5"
-            >
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                More Headlines
-              </h3>
-              <Link
-                to="/news"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-700 hover:text-sky-800"
-              >
-                {t("news.viewAll")} <ArrowRight size={14} />
-              </Link>
-            </motion.div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {newsLoading ? (
-                Array.from({ length: 6 }).map((_, n) => (
-                  <div
-                    key={n}
-                    className="bg-white rounded-2xl overflow-hidden border border-slate-100 animate-pulse"
-                  >
-                    <div className="aspect-[16/10] bg-slate-200" />
-                    <div className="p-4 space-y-2">
-                      <div className="h-2.5 bg-slate-200 rounded w-1/3" />
-                      <div className="h-4 bg-slate-200 rounded w-full" />
-                      <div className="h-4 bg-slate-200 rounded w-2/3" />
-                    </div>
-                  </div>
-                ))
-              ) : secondaryNews.length === 0 ? (
-                <div className="col-span-full text-center py-10 text-slate-500">
-                  <p className="font-medium">
-                    No more articles yet — check back soon.
-                  </p>
-                </div>
-              ) : (
-                secondaryNews.map((article, i) => {
-                  const previewVideo =
-                    article.videoUrl && isDirectVideoFile(article.videoUrl)
-                      ? article.videoUrl
-                      : null;
-                  return (
-                    <motion.div
-                      key={article.id}
-                      custom={i}
-                      initial="hidden"
-                      whileInView="visible"
-                      viewport={{ once: true }}
-                      variants={fadeUp}
-                      className="h-full"
-                    >
-                      <Link
-                        to={`/news/${article.slug}`}
-                        className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-lg hover:border-sky-200 hover:-translate-y-1 transition-all duration-300"
-                      >
-                        <div className="aspect-[16/10] overflow-hidden relative bg-gradient-to-br from-sky-50 to-slate-100">
-                          {article.image ? (
-                            <img
-                              src={article.image}
-                              alt=""
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : previewVideo ? (
-                            <>
-                              <MediaPlaceholder className="absolute inset-0" size="sm" />
-                              <CardVideo
-                                src={previewVideo}
-                                className="relative w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            </>
-                          ) : (
-                            <MediaPlaceholder className="w-full h-full" size="sm" />
-                          )}
-                          {previewVideo ? (
-                            <span className="absolute bottom-2 right-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-900/70 text-white backdrop-blur-sm pointer-events-none">
-                              <PlayCircle size={13} />
-                            </span>
-                          ) : article.videoUrl ? (
-                            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/25 group-hover:bg-slate-900/35 transition-colors pointer-events-none">
-                              <PlayCircle size={36} className="text-white drop-shadow-lg" />
-                            </div>
-                          ) : null}
-                        </div>
-                        <div className="flex flex-col flex-1 p-4">
-                          <span className="text-[10px] font-semibold text-sky-700 uppercase tracking-wide mb-1.5">
-                            {article.category}
-                          </span>
-                          <h3 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-sky-700 transition-colors mb-3">
-                            {article.title}
-                          </h3>
-                          <div className="mt-auto flex items-center justify-between pt-2 border-t border-slate-100">
-                            <span className="text-xs text-slate-500">
-                              {formatDate(article.publishedAt)}
-                            </span>
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700">
-                              {t("news.readMore")}
-                              <ArrowRight
-                                size={12}
-                                className="group-hover:translate-x-1 transition-transform"
-                              />
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+          {!newsLoading && !featuredArticle && secondaryNews.length === 0 && (
+            <p className="text-center text-slate-500 font-medium py-10">
+              No articles yet — check back soon.
+            </p>
+          )}
         </div>
       </section>
 
