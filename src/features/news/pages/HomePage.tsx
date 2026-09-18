@@ -196,7 +196,7 @@ export function HomePage() {
   const { events, loading: eventsLoading } = useEvents();
   const featuredArticle = articles[0];
   const secondFeaturedArticle = articles[1];
-  const secondaryNews = articles.slice(2, 8);
+  const secondaryNews = articles.slice(2, 7);
   const upcomingEvents = events
     .filter((e) => !getEventTiming(e.date, e.endDate).isPast)
     .slice(0, 3);
@@ -242,7 +242,7 @@ export function HomePage() {
             </Link>
           </motion.div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {/* Two top stories */}
             <NewsTile
               article={featuredArticle}
@@ -257,27 +257,26 @@ export function HomePage() {
               featured
             />
 
+            {/* One headline fills out the first row */}
             {newsLoading ? (
-              Array.from({ length: 6 }).map((_, n) => (
-                <NewsTile key={n} loading animationIndex={n + 2} />
-              ))
+              <NewsTile loading animationIndex={2} />
             ) : (
-              secondaryNews.map((article, i) => (
+              secondaryNews.slice(0, 1).map((article) => (
                 <NewsTile
                   key={article.id}
                   article={article}
                   loading={false}
-                  animationIndex={i + 2}
+                  animationIndex={2}
                 />
               ))
             )}
 
-            {/* About the site — last tile */}
+            {/* About the site — last tile of the first row */}
             <motion.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
-              custom={2 + (newsLoading ? 6 : secondaryNews.length)}
+              custom={3}
               variants={fadeUp}
               className="h-full"
             >
@@ -313,6 +312,22 @@ export function HomePage() {
                 </div>
               </div>
             </motion.div>
+
+            {/* Remaining headlines — second row */}
+            {newsLoading ? (
+              Array.from({ length: 4 }).map((_, n) => (
+                <NewsTile key={n} loading animationIndex={n + 4} />
+              ))
+            ) : (
+              secondaryNews.slice(1).map((article, i) => (
+                <NewsTile
+                  key={article.id}
+                  article={article}
+                  loading={false}
+                  animationIndex={i + 4}
+                />
+              ))
+            )}
           </div>
 
           {!newsLoading && !featuredArticle && secondaryNews.length === 0 && (
