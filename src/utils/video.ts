@@ -1,6 +1,6 @@
 /** Extracts the YouTube video id from a watch / youtu.be URL, or null. */
 export function getYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&\s]+)/);
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&?#\s]+)/);
   return match ? match[1] : null;
 }
 
