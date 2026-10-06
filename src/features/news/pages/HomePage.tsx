@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   Calendar,
@@ -25,6 +24,7 @@ import { useEvents } from "../../events/hooks/useEvents";
 import { EventCard } from "../../../components/shared/EventCard";
 import { ChapterCard } from "../../../components/shared/ChapterCard";
 import { CardVideo } from "../../../components/shared/CardVideo";
+import { MusicVideoTile } from "../../../components/shared/MusicVideoTile";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
 import {
   CardSkeleton,
@@ -43,18 +43,6 @@ const fadeUp = {
     transition: { duration: 0.5, delay: i * 0.1 },
   }),
 };
-
-// Crossfading background images for the "about" panel
-const aboutSlides = [
-  "/images/Picture8.jpg",
-  "/images/Picture7.jpg",
-  "/images/Picture1.png",
-  "/images/Picture3.jpg",
-  "/images/Picture4.jpg",
-  "/images/Picture5.jpg",
-  "/images/Picture6.jpg",
-  "/images/Picture9.jpg",
-];
 
 const programs = [
   {
@@ -201,14 +189,6 @@ export function HomePage() {
     .filter((e) => !getEventTiming(e.date, e.endDate).isPast)
     .slice(0, 3);
 
-  const [aboutSlideIndex, setAboutSlideIndex] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setAboutSlideIndex((prev) => (prev + 1) % aboutSlides.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
   const impactStats = [
     { value: "500+",  labelKey: "impact.volunteers", icon: Users,       color: "text-sky-600" },
     { value: String(chapters.length), labelKey: "impact.chapters", icon: Globe, color: "text-green-600" },
@@ -271,7 +251,7 @@ export function HomePage() {
               ))
             )}
 
-            {/* About the site — last tile of the first row */}
+            {/* Music video — last tile of the first row */}
             <motion.div
               initial="hidden"
               whileInView="visible"
@@ -280,37 +260,11 @@ export function HomePage() {
               variants={fadeUp}
               className="h-full"
             >
-              <div className="relative flex flex-col h-full rounded-xl overflow-hidden shadow-sm">
-                <div className="absolute inset-0">
-                  <AnimatePresence mode="sync">
-                    <motion.img
-                      key={aboutSlideIndex}
-                      src={aboutSlides[aboutSlideIndex]}
-                      alt=""
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 1.2, ease: "easeInOut" }}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  </AnimatePresence>
-                  <div className="absolute inset-0 bg-gradient-to-b from-sky-900/85 via-sky-900/80 to-slate-950/90" />
-                </div>
-                <div className="relative z-10 flex flex-col h-full p-2.5">
-                  <p className="text-sky-300 font-semibold tracking-widest text-[8px] uppercase mb-1">
-                    {t("hero.tagline")}
-                  </p>
-                  <h3 className="text-xs font-bold text-white leading-snug line-clamp-2">
-                    {t("hero.headline")}
-                  </h3>
-                  <Link
-                    to="/about"
-                    className="mt-auto inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-white text-sky-800 font-semibold rounded-lg hover:bg-sky-50 transition-colors text-[10px]"
-                  >
-                    {t("hero.ctaLearnMore")} <ArrowRight size={10} />
-                  </Link>
-                </div>
-              </div>
+              <MusicVideoTile
+                youtubeUrl="https://youtu.be/MIBGUE1b0_M"
+                title="Waaba Baryey Bilicsan"
+                artist="Kooxda Waaberi"
+              />
             </motion.div>
 
             {/* Remaining headlines — second row */}

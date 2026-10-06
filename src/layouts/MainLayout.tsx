@@ -2,7 +2,6 @@ import { Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Navbar } from "../components/layout/Navbar";
 import { Footer } from "../components/layout/Footer";
-import { MusicPlayer } from "../components/layout/MusicPlayer";
 
 export function MainLayout() {
   const { t } = useTranslation();
@@ -16,7 +15,6 @@ export function MainLayout() {
         <Outlet />
       </main>
       <Footer />
-      <MusicPlayer />
     </div>
   );
 }

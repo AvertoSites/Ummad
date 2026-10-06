@@ -12,6 +12,11 @@ const so = {
       contact: "La Xiriir",
       getInvolved: "Ku Biir",
     },
+    musicVideo: {
+      label: "Muuqaal Hees",
+      play: "Daar muuqaalka heesta",
+      watchOnYouTube: "Ka daawo YouTube",
+    },
     // Hero
     hero: {
       tagline: "Midnimo · Horumar · Wadajir",
@@ -221,19 +226,6 @@ const so = {
       gallery: "Galeriida",
       volunteerSection: "Nala Iskaa u Shaqee",
       contactInfo: "Macluumaadka Xiriirka",
-    },
-    // Music player
-    player: {
-      label: "Ciyaariyaha muusigga",
-      tapToUnmute: "Taabo si aad u maqasho",
-      unmute: "Codka fur",
-      mute: "Codka dami",
-      play: "Shid",
-      pause: "Jooji",
-      next: "Heesta xigta",
-      previous: "Heesta hore",
-      collapse: "Yaree ciyaariyaha",
-      expand: "Ballaadhi ciyaariyaha",
     },
     // General
     general: {

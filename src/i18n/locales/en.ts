@@ -12,6 +12,11 @@ const en = {
       contact: "Contact",
       getInvolved: "Get Involved",
     },
+    musicVideo: {
+      label: "Music Video",
+      play: "Play music video",
+      watchOnYouTube: "Watch on YouTube",
+    },
     // Hero
     hero: {
       tagline: "Midnimo · Horumar · Wadajir",
@@ -221,19 +226,6 @@ const en = {
       gallery: "Gallery",
       volunteerSection: "Volunteer With Us",
       contactInfo: "Contact Information",
-    },
-    // Music player
-    player: {
-      label: "Music player",
-      tapToUnmute: "Tap to unmute",
-      unmute: "Unmute",
-      mute: "Mute",
-      play: "Play",
-      pause: "Pause",
-      next: "Next song",
-      previous: "Previous song",
-      collapse: "Minimize player",
-      expand: "Expand player",
     },
     // General
     general: {
