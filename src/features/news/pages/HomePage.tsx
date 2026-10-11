@@ -27,6 +27,10 @@ import { CardVideo } from "../../../components/shared/CardVideo";
 import { MusicVideoTile } from "../../../components/shared/MusicVideoTile";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
 import {
+  ImageCarousel,
+  type CarouselSlide,
+} from "../../../components/shared/ImageCarousel";
+import {
   CardSkeleton,
   CardSkeletonGrid,
 } from "../../../components/shared/CardSkeleton";
@@ -34,6 +38,25 @@ import { formatDate } from "../../../utils/format-date";
 import { getEventTiming } from "../../../utils/event-date";
 import { isDirectVideoFile } from "../../../utils/video";
 import { siteConfig } from "../../../config/site";
+
+const CONFERENCE_DIR = "/images/conference";
+
+const conferenceSlides: CarouselSlide[] = [
+  { file: "conference-crowd.jpeg", caption: "A full house at the UMAD Community Conference" },
+  { file: "conference-audience.jpeg", caption: "Community members joining the conversation" },
+  { file: "conference-panel-logo.jpeg", caption: "Elders sharing their perspective" },
+  { file: "conference-panel-speaker.jpeg", caption: "Voices from across the community" },
+  { file: "conference-moderator.jpeg", caption: "Opening the panel discussion" },
+  { file: "conference-panel-wide.jpeg", caption: "Our panel of speakers" },
+  { file: "conference-panel-speaker-2.jpeg", caption: "Women leading the dialogue" },
+  { file: "conference-panel-elders.jpeg", caption: "Wisdom from our elders" },
+  { file: "conference-panel-discussion.jpeg", caption: "An open and honest exchange" },
+  { file: "conference-audience-logo.jpeg", caption: "Unity, progress, togetherness" },
+].map(({ file, caption }) => ({
+  src: `${CONFERENCE_DIR}/${file}`,
+  alt: caption,
+  caption,
+}));
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -380,10 +403,9 @@ export function HomePage() {
               transition={{ duration: 0.5 }}
               className="relative"
             >
-              <img
-                src="/images/Picture8.jpg"
-                alt="Community development"
-                className="rounded-2xl shadow-xl w-full aspect-[4/3] object-cover"
+              <ImageCarousel
+                slides={conferenceSlides}
+                className="rounded-2xl shadow-xl w-full aspect-[4/3]"
               />
               <div className="absolute -bottom-5 -left-5 bg-white rounded-xl shadow-lg p-4 border border-slate-100 flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
