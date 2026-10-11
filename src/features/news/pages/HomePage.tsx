@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   PlayCircle,
   Star,
+  Camera,
 } from "lucide-react";
 import { useChapters } from "../../chapters/hooks/useChapters";
 import { useNews } from "../hooks/useNews";
@@ -246,33 +247,49 @@ export function HomePage() {
           </motion.div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {/* Conference photos — first tile so visitors see them right away */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={0}
+              variants={fadeUp}
+              className="h-full"
+            >
+              <div className="flex flex-col h-full bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-lg hover:border-sky-200 transition-all duration-300">
+                <ImageCarousel
+                  slides={conferenceSlides}
+                  compact
+                  className="aspect-[16/10]"
+                />
+                <div className="flex flex-col flex-1 p-2.5">
+                  <span className="text-[9px] font-semibold text-sky-700 uppercase tracking-wide mb-1 truncate">
+                    Photo Gallery
+                  </span>
+                  <h3 className="text-xs font-semibold text-slate-900 leading-snug line-clamp-2">
+                    UMAD Community Conference
+                  </h3>
+                  <div className="mt-auto flex items-center gap-1 pt-1.5 text-[10px] text-slate-400">
+                    <Camera size={9} />
+                    {conferenceSlides.length} photos
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
             {/* Two top stories */}
             <NewsTile
               article={featuredArticle}
               loading={newsLoading}
-              animationIndex={0}
+              animationIndex={1}
               featured
             />
             <NewsTile
               article={secondFeaturedArticle}
               loading={newsLoading}
-              animationIndex={1}
+              animationIndex={2}
               featured
             />
-
-            {/* One headline fills out the first row */}
-            {newsLoading ? (
-              <NewsTile loading animationIndex={2} />
-            ) : (
-              secondaryNews.slice(0, 1).map((article) => (
-                <NewsTile
-                  key={article.id}
-                  article={article}
-                  loading={false}
-                  animationIndex={2}
-                />
-              ))
-            )}
 
             {/* Music video — last tile of the first row */}
             <motion.div
@@ -296,7 +313,7 @@ export function HomePage() {
                 <NewsTile key={n} loading animationIndex={n + 4} />
               ))
             ) : (
-              secondaryNews.slice(1).map((article, i) => (
+              secondaryNews.slice(0, 4).map((article, i) => (
                 <NewsTile
                   key={article.id}
                   article={article}
@@ -403,9 +420,10 @@ export function HomePage() {
               transition={{ duration: 0.5 }}
               className="relative"
             >
-              <ImageCarousel
-                slides={conferenceSlides}
-                className="rounded-2xl shadow-xl w-full aspect-[4/3]"
+              <img
+                src="/images/Picture8.jpg"
+                alt="Community development"
+                className="rounded-2xl shadow-xl w-full aspect-[4/3] object-cover"
               />
               <div className="absolute -bottom-5 -left-5 bg-white rounded-xl shadow-lg p-4 border border-slate-100 flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
