@@ -19,7 +19,9 @@ export interface Submission {
   title: string;
   excerpt: string;
   content: string;
+  /** Main cover — same as imageUrls[0] */
   imageUrl?: string;
+  imageUrls?: string[];
   videoUrl?: string;
   authorName: string;
   authorEmail: string;

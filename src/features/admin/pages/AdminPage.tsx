@@ -1301,6 +1301,7 @@ function SubmissionsQueue({
         chapterName: sub.chapterName,
         category: sub.category,
         image: sub.imageUrl,
+        images: sub.imageUrls,
         videoUrl: sub.videoUrl,
         status: "published",
       });
@@ -1583,6 +1584,7 @@ function SubmissionsQueue({
                 excerpt: editingSubmission.excerpt,
                 content: editingSubmission.content,
                 image: editingSubmission.imageUrl,
+                images: editingSubmission.imageUrls ?? [],
                 videoUrl: editingSubmission.videoUrl,
                 author: editingSubmission.authorName,
                 authorEmail: editingSubmission.authorEmail,

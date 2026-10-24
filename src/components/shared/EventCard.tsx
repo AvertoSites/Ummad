@@ -4,7 +4,7 @@ import type { EventData as Event } from "../../features/events/services/events";
 import { formatDate } from "../../utils/format-date";
 import { getEventTiming, eventTimingLabel } from "../../utils/event-date";
 import { Card, CardMedia } from "./Card";
-import { MediaPlaceholder } from "./MediaPlaceholder";
+import { CoverImage } from "./CoverImage";
 
 interface EventCardProps {
   event: Event;
@@ -21,15 +21,11 @@ export function EventCard({ event }: EventCardProps) {
       className={`h-full ${timing.isPast ? "opacity-75" : ""}`}
     >
       <CardMedia tone="amber">
-        {event.image ? (
-          <img
-            src={event.image}
-            alt={event.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <MediaPlaceholder className="w-full h-full" />
-        )}
+        <CoverImage
+          srcs={[event.image]}
+          alt={event.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
         <span
           className={`absolute top-3 left-3 px-2.5 py-1 text-xs font-semibold rounded-full ${
             timing.isPast

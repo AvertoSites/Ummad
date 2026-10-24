@@ -13,11 +13,17 @@ import {
   UploadCloud,
   Link2,
   X,
+  Plus,
 } from "lucide-react";
 import { useSubmissions } from "../SubmissionsContext";
 import { useChapters } from "../../chapters/hooks/useChapters";
 import { SegmentedToggle } from "../../../components/shared/SegmentedToggle";
 import { trackArticleSubmit } from "../../../lib/analytics";
+import { uploadFile } from "../../../lib/storage";
+
+// Must match the /submissions limits in storage.rules
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 const CATEGORIES = [
   "Community",
@@ -64,11 +70,15 @@ export function SubmitArticlePage() {
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [mediaSource, setMediaSource] = useState<"upload" | "url" | "">("");
-  const [mediaFile, setMediaFile] = useState<{
-    file: File;
-    previewUrl: string;
-  } | null>(null);
+  // Images allow several files; videos only ever hold one
+  const [mediaFiles, setMediaFiles] = useState<
+    { file: File; previewUrl: string }[]
+  >([]);
+  const mediaFilesRef = useRef(mediaFiles);
+  // Image URL mode — one input per image
+  const [imageUrls, setImageUrls] = useState<string[]>([""]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formStarted, setFormStarted] = useState(false);
 
@@ -79,27 +89,43 @@ export function SubmitArticlePage() {
     }
   }
 
-  // Clean up object URL when component unmounts or file changes
+  // Clean up object URLs when the component unmounts
+  useEffect(() => {
+    mediaFilesRef.current = mediaFiles;
+  }, [mediaFiles]);
   useEffect(() => {
     return () => {
-      if (mediaFile) URL.revokeObjectURL(mediaFile.previewUrl);
+      mediaFilesRef.current.forEach((m) => URL.revokeObjectURL(m.previewUrl));
     };
-  }, [mediaFile]);
+  }, []);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (mediaFile) URL.revokeObjectURL(mediaFile.previewUrl);
-    setMediaFile({ file, previewUrl: URL.createObjectURL(file) });
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    const picked = files.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    if (form.mediaType === "image") {
+      setMediaFiles([...mediaFiles, ...picked]);
+    } else {
+      mediaFiles.forEach((m) => URL.revokeObjectURL(m.previewUrl));
+      setMediaFiles(picked.slice(0, 1));
+    }
   }
 
-  function clearMedia() {
-    if (mediaFile) URL.revokeObjectURL(mediaFile.previewUrl);
-    setMediaFile(null);
-    setMediaSource("");
-    set("mediaType", "");
+  function resetMedia() {
+    mediaFiles.forEach((m) => URL.revokeObjectURL(m.previewUrl));
+    setMediaFiles([]);
+    setImageUrls([""]);
     set("mediaUrl", "");
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function removeMediaFile(index: number) {
+    URL.revokeObjectURL(mediaFiles[index].previewUrl);
+    setMediaFiles(mediaFiles.filter((_, i) => i !== index));
   }
 
   function set(field: keyof FormState, value: string) {
@@ -132,20 +158,51 @@ export function SubmitArticlePage() {
     if (!validate()) return;
 
     const chapter = chapters.find((c) => c.id === form.chapterId);
-    const resolvedImageUrl =
-      form.mediaType === "image"
-        ? mediaSource === "upload"
-          ? mediaFile?.previewUrl
-          : form.mediaUrl.trim() || undefined
-        : undefined;
-    const resolvedVideoUrl =
-      form.mediaType === "video"
-        ? mediaSource === "upload"
-          ? mediaFile?.previewUrl
-          : form.mediaUrl.trim() || undefined
-        : undefined;
+    const uploading =
+      mediaSource === "upload" && form.mediaType !== "" && mediaFiles.length > 0;
+
+    if (uploading) {
+      const maxBytes = form.mediaType === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+      const tooBig = mediaFiles.find((m) => m.file.size > maxBytes);
+      if (tooBig) {
+        setSubmitError(
+          `"${tooBig.file.name}" is too large. Maximum is ${maxBytes / (1024 * 1024)} MB.`,
+        );
+        return;
+      }
+    }
+
+    setSubmitError("");
     setSubmitting(true);
     try {
+      // Upload device files to Storage so admins get permanent URLs, not
+      // blob: previews that die with this tab
+      const uploadedUrls = uploading
+        ? await Promise.all(
+            mediaFiles.map(({ file }) => {
+              const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
+              const folder = form.mediaType === "image" ? "images" : "videos";
+              return uploadFile(
+                file,
+                `submissions/${folder}/${crypto.randomUUID()}.${ext}`,
+              );
+            }),
+          )
+        : [];
+
+      const resolvedImageUrls =
+        form.mediaType === "image"
+          ? mediaSource === "upload"
+            ? uploadedUrls
+            : imageUrls.map((u) => u.trim()).filter(Boolean)
+          : [];
+      const resolvedVideoUrl =
+        form.mediaType === "video"
+          ? mediaSource === "upload"
+            ? uploadedUrls[0]
+            : form.mediaUrl.trim() || undefined
+          : undefined;
+
       await addSubmission({
         title: form.title.trim(),
         excerpt: form.excerpt.trim(),
@@ -155,17 +212,24 @@ export function SubmitArticlePage() {
         chapterId: form.chapterId,
         chapterName: chapter?.name ?? form.chapterId,
         category: form.category,
-        ...(resolvedImageUrl && { imageUrl: resolvedImageUrl }),
+        ...(resolvedImageUrls.length > 0 && {
+          imageUrl: resolvedImageUrls[0],
+          imageUrls: resolvedImageUrls,
+        }),
         ...(resolvedVideoUrl && { videoUrl: resolvedVideoUrl }),
       });
       setSubmitted(true);
       setForm(empty);
-      setMediaFile(null);
+      resetMedia();
       setMediaSource("");
       trackArticleSubmit("submitted");
     } catch (err) {
       console.error("Submission failed:", err);
-      setErrors({ title: "Submission failed. Please try again." });
+      setSubmitError(
+        uploading
+          ? "We couldn't upload your media. Please check your connection and try again."
+          : "Submission failed. Please try again.",
+      );
       trackArticleSubmit("error");
     } finally {
       setSubmitting(false);
@@ -262,7 +326,6 @@ export function SubmitArticlePage() {
               <button
                 onClick={() => {
                   setSubmitted(false);
-                  setMediaFile(null);
                   setMediaSource("");
                 }}
                 className="px-6 py-3 bg-sky-700 text-white font-semibold rounded-xl hover:bg-sky-800 transition-colors"
@@ -417,13 +480,8 @@ export function SubmitArticlePage() {
                       onClick={() => {
                         const next = form.mediaType === type ? "" : type;
                         set("mediaType", next);
-                        set("mediaUrl", "");
-                        if (mediaFile)
-                          URL.revokeObjectURL(mediaFile.previewUrl);
-                        setMediaFile(null);
+                        resetMedia();
                         setMediaSource(next ? "upload" : "");
-                        if (fileInputRef.current)
-                          fileInputRef.current.value = "";
                       }}
                       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
                         active
@@ -446,11 +504,7 @@ export function SubmitArticlePage() {
                     value={mediaSource || "upload"}
                     onChange={(src) => {
                       setMediaSource(src);
-                      set("mediaUrl", "");
-                      if (mediaFile) URL.revokeObjectURL(mediaFile.previewUrl);
-                      setMediaFile(null);
-                      if (fileInputRef.current)
-                        fileInputRef.current.value = "";
+                      resetMedia();
                     }}
                     options={[
                       {
@@ -479,6 +533,7 @@ export function SubmitArticlePage() {
                     ref={fileInputRef}
                     type="file"
                     accept={form.mediaType === "image" ? "image/*" : "video/*"}
+                    multiple={form.mediaType === "image"}
                     className="sr-only"
                     onChange={handleFileSelect}
                   />
@@ -486,7 +541,7 @@ export function SubmitArticlePage() {
                   {/* Upload area */}
                   {mediaSource === "upload" && (
                     <div>
-                      {!mediaFile ? (
+                      {mediaFiles.length === 0 ? (
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
@@ -497,7 +552,7 @@ export function SubmitArticlePage() {
                             <p className="text-sm font-semibold">
                               {t("submitArticle.clickToSelect")}{" "}
                               {form.mediaType === "image"
-                                ? t("submitArticle.anImage")
+                                ? t("submitArticle.images")
                                 : t("submitArticle.aVideo")}
                             </p>
                             <p className="text-xs mt-1 text-slate-400">
@@ -507,28 +562,63 @@ export function SubmitArticlePage() {
                             </p>
                           </div>
                         </button>
+                      ) : form.mediaType === "image" ? (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {mediaFiles.map((m, i) => (
+                              <div
+                                key={m.previewUrl}
+                                className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 aspect-[4/3]"
+                              >
+                                <img
+                                  src={m.previewUrl}
+                                  alt={m.file.name}
+                                  className="w-full h-full object-cover"
+                                />
+                                {i === 0 && (
+                                  <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md bg-sky-700 text-white text-[11px] font-semibold">
+                                    {t("submitArticle.mainCover")}
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => removeMediaFile(i)}
+                                  aria-label={`Remove ${m.file.name}`}
+                                  className="absolute top-1.5 right-1.5 w-6 h-6 bg-white/90 text-slate-500 hover:text-red-600 rounded-full flex items-center justify-center shadow transition-colors"
+                                >
+                                  <X size={13} />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 hover:border-sky-500 hover:bg-sky-50 text-slate-400 hover:text-sky-600 transition-colors aspect-[4/3]"
+                            >
+                              <Plus size={22} />
+                              <span className="text-xs font-semibold">
+                                {t("submitArticle.addMoreImages")}
+                              </span>
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-500">
+                            {t("submitArticle.firstIsCover")}
+                          </p>
+                        </div>
                       ) : (
                         <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-                          {form.mediaType === "image" ? (
-                            <img
-                              src={mediaFile.previewUrl}
-                              alt="Preview"
-                              className="w-full max-h-60 object-cover"
-                            />
-                          ) : (
-                            <video
-                              src={mediaFile.previewUrl}
-                              controls
-                              className="w-full max-h-60"
-                            />
-                          )}
+                          <video
+                            src={mediaFiles[0].previewUrl}
+                            controls
+                            className="w-full max-h-60"
+                          />
                           <div className="flex items-center justify-between px-3 py-2 border-t border-slate-200">
                             <p className="text-xs text-slate-500 truncate max-w-xs">
-                              {mediaFile.file.name}
+                              {mediaFiles[0].file.name}
                             </p>
                             <button
                               type="button"
-                              onClick={clearMedia}
+                              onClick={() => removeMediaFile(0)}
                               className="ml-3 p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0"
                             >
                               <X size={14} />
@@ -539,38 +629,82 @@ export function SubmitArticlePage() {
                     </div>
                   )}
 
-                  {/* URL input */}
-                  {mediaSource === "url" && (
+                  {/* Image URL inputs — one per image */}
+                  {mediaSource === "url" && form.mediaType === "image" && (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-slate-700">
+                        {t("submitArticle.imageUrl")}
+                      </label>
+                      {imageUrls.map((url, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="w-16 h-11 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 flex-shrink-0">
+                            {url.trim() && (
+                              <img
+                                key={url}
+                                src={url}
+                                alt=""
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display =
+                                    "none";
+                                }}
+                              />
+                            )}
+                          </div>
+                          <input
+                            type="url"
+                            value={url}
+                            onChange={(e) =>
+                              setImageUrls(
+                                imageUrls.map((u, j) =>
+                                  j === i ? e.target.value : u,
+                                ),
+                              )
+                            }
+                            placeholder="https://example.com/photo.jpg"
+                            className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors"
+                          />
+                          {imageUrls.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setImageUrls(imageUrls.filter((_, j) => j !== i))
+                              }
+                              aria-label="Remove image URL"
+                              className="mt-2 p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setImageUrls([...imageUrls, ""])}
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-700 hover:text-sky-800"
+                      >
+                        <Plus size={15} />
+                        {t("submitArticle.addImageUrl")}
+                      </button>
+                      <p className="text-xs text-slate-500">
+                        {t("submitArticle.firstIsCover")}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Video URL input */}
+                  {mediaSource === "url" && form.mediaType === "video" && (
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                        {form.mediaType === "image"
-                          ? t("submitArticle.imageUrl")
-                          : t("submitArticle.videoUrl")}
+                        {t("submitArticle.videoUrl")}
                       </label>
                       <input
                         type="url"
                         value={form.mediaUrl}
                         onChange={(e) => set("mediaUrl", e.target.value)}
-                        placeholder={
-                          form.mediaType === "image"
-                            ? "https://example.com/photo.jpg"
-                            : "https://www.youtube.com/watch?v=…"
-                        }
+                        placeholder="https://www.youtube.com/watch?v=…"
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors"
                       />
-                      {form.mediaType === "image" && form.mediaUrl && (
-                        <div className="mt-3 rounded-xl overflow-hidden border border-slate-200 h-44">
-                          <img
-                            src={form.mediaUrl}
-                            alt="Preview"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
-                            }}
-                          />
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -678,6 +812,15 @@ export function SubmitArticlePage() {
             </div>
 
             <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-white/90 backdrop-blur-sm border-t border-slate-200">
+              {submitError && (
+                <p
+                  role="alert"
+                  className="flex items-center gap-1.5 text-sm text-red-600 mb-3"
+                >
+                  <AlertCircle size={15} className="flex-shrink-0" />
+                  {submitError}
+                </p>
+              )}
               <button
                 type="submit"
                 disabled={submitting}

@@ -13,6 +13,7 @@ import { useNews } from "../../news/hooks/useNews";
 import { useEvents } from "../../events/hooks/useEvents";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { EventCard } from "../../../components/shared/EventCard";
+import { CoverImage } from "../../../components/shared/CoverImage";
 import { trackChapterView } from "../../../lib/analytics";
 
 const fadeUp = {
@@ -54,9 +55,10 @@ export function ChapterDetailPage() {
     <div className="min-h-screen bg-white pt-16">
       {/* Cover Hero */}
       <div className="relative h-72 sm:h-96 overflow-hidden">
-        <img
-          src={chapter.coverImage}
+        <CoverImage
+          srcs={[chapter.coverImage]}
           alt={chapter.name}
+          placeholderSize="lg"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent" />

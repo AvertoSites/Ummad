@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { MapPin, ArrowRight } from "lucide-react";
 import type { ChapterData } from "../../features/chapters/services/chapters";
 import { Card, CardMedia } from "./Card";
-import { MediaPlaceholder } from "./MediaPlaceholder";
+import { CoverImage } from "./CoverImage";
 
 interface ChapterCardProps {
   chapter: ChapterData;
@@ -14,15 +14,11 @@ export function ChapterCard({ chapter }: ChapterCardProps) {
   return (
     <Card to={`/chapters/${chapter.slug}`} className="h-full">
       <CardMedia>
-        {chapter.coverImage ? (
-          <img
-            src={chapter.coverImage}
-            alt={chapter.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : (
-          <MediaPlaceholder className="w-full h-full" />
-        )}
+        <CoverImage
+          srcs={[chapter.coverImage]}
+          alt={chapter.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
       </CardMedia>
 
       <div className="p-6 flex flex-col flex-1">

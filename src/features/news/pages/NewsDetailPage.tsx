@@ -6,6 +6,8 @@ import { ArrowLeft, Calendar, User, Tag, Clock } from "lucide-react";
 import { useNewsArticle, useNews } from "../hooks/useNews";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
+import { CoverImage } from "../../../components/shared/CoverImage";
+import { ImageCarousel } from "../../../components/shared/ImageCarousel";
 import { ShareButtons } from "../../../components/shared/ShareButtons";
 import { ArticleBody } from "../components/ArticleBody";
 import { readingTimeMinutes } from "../../../utils/reading-time";
@@ -103,20 +105,39 @@ export function NewsDetailPage() {
             className="w-full max-h-[75vh] object-contain"
           />
         </motion.div>
+      ) : article.images.length > 1 ? (
+        <ImageCarousel
+          slides={[...new Set(article.images)].map((src, i) => ({
+            src,
+            alt: `${article.title} — photo ${i + 1}`,
+          }))}
+          fit="contain"
+          className="h-72 sm:h-[32rem]"
+        />
       ) : article.image ? (
-        <div className="relative h-64 sm:h-96 overflow-hidden">
-          <motion.img
-            src={article.image}
-            alt={article.title}
+        <div className="relative h-72 sm:h-[32rem] overflow-hidden bg-slate-900">
+          {/* Blurred copy fills the sides so the whole photo shows uncropped */}
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-cover bg-center scale-110 blur-2xl opacity-60"
+            style={{ backgroundImage: `url("${article.image}")` }}
+          />
+          <motion.div
             initial={{ scale: 1.08, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
+            className="relative w-full h-full"
+          >
+            <CoverImage
+              srcs={[article.image]}
+              alt={article.title}
+              placeholderSize="lg"
+              className="w-full h-full object-contain"
+            />
+          </motion.div>
         </div>
       ) : (
-        <MediaPlaceholder className="h-64 sm:h-96" size="lg" />
+        <MediaPlaceholder className="h-72 sm:h-[32rem]" size="lg" />
       )}
 
       {/* Article */}

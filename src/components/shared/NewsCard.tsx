@@ -2,8 +2,10 @@ import { useTranslation } from "react-i18next";
 import { Calendar, PlayCircle, ArrowRight } from "lucide-react";
 import type { NewsArticleData as NewsArticle } from "../../features/news/services/news";
 import { formatDate } from "../../utils/format-date";
-import { isDirectVideoFile } from "../../utils/video";
+import { getYouTubeThumbnail, isDirectVideoFile } from "../../utils/video";
 import { Card, CardMedia } from "./Card";
+import { CoverImage } from "./CoverImage";
+import { ImageCarousel } from "./ImageCarousel";
 import { CardVideo } from "./CardVideo";
 import { MediaPlaceholder } from "./MediaPlaceholder";
 
@@ -18,13 +20,28 @@ export function NewsCard({ article }: NewsCardProps) {
       ? article.videoUrl
       : null;
   const embedVideo = Boolean(article.videoUrl) && !previewVideo;
+  // YouTube's own thumbnail stands in if the cover photo fails to load
+  const coverSrcs = [
+    article.image,
+    article.videoUrl ? getYouTubeThumbnail(article.videoUrl) : null,
+  ].filter((s): s is string => !!s);
+  const gallery = [...new Set(article.images)];
 
   return (
     <Card to={`/news/${article.slug}`} className="h-full">
       <CardMedia>
-        {article.image ? (
-          <img
-            src={article.image}
+        {gallery.length > 1 ? (
+          <ImageCarousel
+            slides={gallery.map((src, i) => ({
+              src,
+              alt: `${article.title} — photo ${i + 1}`,
+            }))}
+            compact
+            className="w-full h-full"
+          />
+        ) : coverSrcs.length > 0 ? (
+          <CoverImage
+            srcs={coverSrcs}
             alt={article.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />

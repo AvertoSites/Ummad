@@ -15,12 +15,18 @@ import type { Submission } from "../SubmissionsContext";
 const SUB_COL = "submissions";
 
 function toData(id: string, d: DocumentData): Submission {
+  const imageUrls: string[] = Array.isArray(d.imageUrls)
+    ? d.imageUrls
+    : d.imageUrl
+      ? [d.imageUrl]
+      : [];
   return {
     id,
     title: d.title ?? "",
     excerpt: d.excerpt ?? "",
     content: d.content ?? "",
-    imageUrl: d.imageUrl ?? undefined,
+    imageUrl: imageUrls[0],
+    imageUrls,
     videoUrl: d.videoUrl ?? undefined,
     authorName: d.authorName ?? "",
     authorEmail: d.authorEmail ?? "",

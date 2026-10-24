@@ -2,7 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useChapters } from "../../chapters/hooks/useChapters";
 import { slugify } from "../../news/services/news";
 import type { NewsArticleData, NewsInput } from "../../news/services/news";
-import { ImageUpload } from "../../../components/ImageUpload";
+import { MultiImageUpload } from "../../../components/MultiImageUpload";
 import { VideoUpload } from "../../../components/VideoUpload";
 import { SegmentedToggle } from "../../../components/shared/SegmentedToggle";
 
@@ -46,7 +46,7 @@ export function NewsForm({
   const [chapterId, setChapterId] = useState(
     lockedChapterId ?? initial?.chapterId ?? "",
   );
-  const [image, setImage] = useState(initial?.image ?? "");
+  const [images, setImages] = useState<string[]>(initial?.images ?? []);
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
   // Detect whether the existing videoUrl is an uploaded file or a paste URL
   const [videoSource, setVideoSource] = useState<"url" | "upload">(
@@ -108,7 +108,8 @@ export function NewsForm({
         category,
         chapterId,
         chapterName,
-        image: image.trim() || undefined,
+        image: images[0],
+        images,
         videoUrl: videoUrl.trim() || undefined,
         tags: tags
           .split(",")
@@ -258,17 +259,17 @@ export function NewsForm({
         </div>
       </div>
 
-      {/* Image + Video */}
+      {/* Cover photos */}
+      <MultiImageUpload
+        label="Cover Photos"
+        urls={images}
+        storagePath="images/news"
+        onChange={setImages}
+        optional
+      />
+
+      {/* Video */}
       <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <ImageUpload
-            label="Cover Photo"
-            currentUrl={image}
-            storagePath="images/news"
-            onChange={setImage}
-            optional
-          />
-        </div>
         <div>
           {/* Video — toggle between URL paste and file upload */}
           <div className="flex items-center justify-between mb-2">

@@ -22,7 +22,10 @@ export interface NewsArticleData {
   title: string;
   excerpt: string;
   content: string;
+  /** Main cover — always images[0] when images is set */
   image?: string;
+  /** All cover photos, in display order */
+  images: string[];
   videoUrl?: string;
   author: string;
   authorEmail?: string;
@@ -41,6 +44,7 @@ export interface NewsInput {
   excerpt: string;
   content: string;
   image?: string;
+  images?: string[];
   videoUrl?: string;
   author: string;
   authorEmail?: string;
@@ -64,13 +68,20 @@ export function slugify(text: string): string {
 }
 
 function toData(id: string, d: DocumentData): NewsArticleData {
+  // Older articles only have a single `image`; treat it as a one-photo list
+  const images: string[] = Array.isArray(d.images)
+    ? d.images
+    : d.image
+      ? [d.image]
+      : [];
   return {
     id,
     slug: d.slug ?? "",
     title: d.title ?? "",
     excerpt: d.excerpt ?? "",
     content: d.content ?? "",
-    image: d.image ?? undefined,
+    image: images[0],
+    images,
     videoUrl: d.videoUrl ?? undefined,
     author: d.author ?? "",
     authorEmail: d.authorEmail ?? undefined,

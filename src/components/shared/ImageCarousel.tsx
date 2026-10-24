@@ -15,6 +15,8 @@ interface ImageCarouselProps {
   className?: string;
   /** Small-tile layout: no caption, smaller always-visible controls */
   compact?: boolean;
+  /** "contain" shows each whole photo over a blurred copy instead of cropping */
+  fit?: "cover" | "contain";
 }
 
 export function ImageCarousel({
@@ -22,6 +24,7 @@ export function ImageCarousel({
   interval = 5000,
   className = "",
   compact = false,
+  fit = "cover",
 }: ImageCarouselProps) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -31,6 +34,12 @@ export function ImageCarousel({
     (next: number) => setIndex((next + count) % count),
     [count],
   );
+  // Carousels sit inside card links — keep control clicks from navigating
+  const control = (next: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    go(next);
+  };
 
   useEffect(() => {
     if (paused || count < 2) return;
@@ -58,6 +67,18 @@ export function ImageCarousel({
       aria-roledescription="carousel"
     >
       <AnimatePresence initial={false}>
+        {fit === "contain" && (
+          <motion.div
+            key={`backdrop-${slide.src}`}
+            aria-hidden
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="absolute inset-0 bg-cover bg-center scale-110 blur-2xl opacity-60"
+            style={{ backgroundImage: `url("${slide.src}")` }}
+          />
+        )}
         <motion.img
           key={slide.src}
           src={slide.src}
@@ -66,7 +87,9 @@ export function ImageCarousel({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="absolute inset-0 w-full h-full object-cover"
+          className={`absolute inset-0 w-full h-full ${
+            fit === "contain" ? "object-contain" : "object-cover"
+          }`}
           draggable={false}
         />
       </AnimatePresence>
@@ -87,7 +110,7 @@ export function ImageCarousel({
         <>
           <button
             type="button"
-            onClick={() => go(index - 1)}
+            onClick={control(index - 1)}
             aria-label="Previous photo"
             className={`absolute left-${compact ? "1.5" : "3"} top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-opacity ${
               compact
@@ -99,7 +122,7 @@ export function ImageCarousel({
           </button>
           <button
             type="button"
-            onClick={() => go(index + 1)}
+            onClick={control(index + 1)}
             aria-label="Next photo"
             className={`absolute right-${compact ? "1.5" : "3"} top-1/2 -translate-y-1/2 rounded-full bg-white/80 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-opacity ${
               compact
@@ -119,7 +142,7 @@ export function ImageCarousel({
               <button
                 key={s.src}
                 type="button"
-                onClick={() => go(i)}
+                onClick={control(i)}
                 aria-label={`Show photo ${i + 1} of ${count}`}
                 aria-current={i === index}
                 className={`rounded-full transition-all duration-300 ${

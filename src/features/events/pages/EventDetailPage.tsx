@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, MapPin, Users, Clock } from "lucide-react";
 import { useEventBySlug } from "../hooks/useEvents";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
+import { CoverImage } from "../../../components/shared/CoverImage";
 import { ShareButtons } from "../../../components/shared/ShareButtons";
 import { formatDate } from "../../../utils/format-date";
 import { getEventTiming, eventTimingLabel } from "../../../utils/event-date";
@@ -48,14 +49,19 @@ export function EventDetailPage() {
       {/* Hero */}
       <div className="relative h-64 sm:h-96 overflow-hidden">
         {event.image ? (
-          <motion.img
-            src={event.image}
-            alt={event.title}
+          <motion.div
             initial={{ scale: 1.08, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="w-full h-full object-cover"
-          />
+            className="w-full h-full"
+          >
+            <CoverImage
+              srcs={[event.image]}
+              alt={event.title}
+              placeholderSize="lg"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
         ) : (
           <MediaPlaceholder className="absolute inset-0" size="lg" />
         )}

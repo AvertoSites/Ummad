@@ -27,6 +27,7 @@ import { ChapterCard } from "../../../components/shared/ChapterCard";
 import { CardVideo } from "../../../components/shared/CardVideo";
 import { MusicVideoTile } from "../../../components/shared/MusicVideoTile";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
+import { CoverImage } from "../../../components/shared/CoverImage";
 import {
   ImageCarousel,
   type CarouselSlide,
@@ -37,7 +38,10 @@ import {
 } from "../../../components/shared/CardSkeleton";
 import { formatDate } from "../../../utils/format-date";
 import { getEventTiming } from "../../../utils/event-date";
-import { isDirectVideoFile } from "../../../utils/video";
+import {
+  getYouTubeThumbnail,
+  isDirectVideoFile,
+} from "../../../utils/video";
 import { siteConfig } from "../../../config/site";
 
 const CONFERENCE_DIR = "/images/conference";
@@ -123,6 +127,12 @@ function NewsTile({
     article?.videoUrl && isDirectVideoFile(article.videoUrl)
       ? article.videoUrl
       : null;
+  // YouTube's own thumbnail stands in if the cover photo fails to load
+  const coverSrcs = [
+    article?.image,
+    article?.videoUrl ? getYouTubeThumbnail(article.videoUrl) : null,
+  ].filter((s): s is string => !!s);
+  const gallery = [...new Set(article?.images ?? [])];
 
   if (loading) {
     return (
@@ -151,10 +161,20 @@ function NewsTile({
         className="group flex flex-col h-full bg-white rounded-xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-lg hover:border-sky-200 hover:-translate-y-1 transition-all duration-300"
       >
         <div className="aspect-[16/10] overflow-hidden relative bg-gradient-to-br from-sky-50 to-slate-100">
-          {article?.image ? (
-            <img
-              src={article.image}
+          {gallery.length > 1 ? (
+            <ImageCarousel
+              slides={gallery.map((src, i) => ({
+                src,
+                alt: `${article?.title ?? ""} — photo ${i + 1}`,
+              }))}
+              compact
+              className="w-full h-full"
+            />
+          ) : coverSrcs.length > 0 ? (
+            <CoverImage
+              srcs={coverSrcs}
               alt=""
+              placeholderSize="sm"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : previewVideo ? (
