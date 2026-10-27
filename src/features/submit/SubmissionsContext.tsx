@@ -23,6 +23,7 @@ export interface Submission {
   imageUrl?: string;
   imageUrls?: string[];
   videoUrl?: string;
+  audioUrl?: string;
   authorName: string;
   authorEmail: string;
   chapterId: string;

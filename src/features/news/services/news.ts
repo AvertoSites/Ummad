@@ -27,6 +27,7 @@ export interface NewsArticleData {
   /** All cover photos, in display order */
   images: string[];
   videoUrl?: string;
+  audioUrl?: string;
   author: string;
   authorEmail?: string;
   publishedAt: string;
@@ -46,6 +47,7 @@ export interface NewsInput {
   image?: string;
   images?: string[];
   videoUrl?: string;
+  audioUrl?: string;
   author: string;
   authorEmail?: string;
   category: string;
@@ -83,6 +85,7 @@ function toData(id: string, d: DocumentData): NewsArticleData {
     image: images[0],
     images,
     videoUrl: d.videoUrl ?? undefined,
+    audioUrl: d.audioUrl ?? undefined,
     author: d.author ?? "",
     authorEmail: d.authorEmail ?? undefined,
     publishedAt: d.publishedAt ?? "",

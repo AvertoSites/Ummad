@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Calendar, PlayCircle, ArrowRight } from "lucide-react";
+import { Calendar, PlayCircle, ArrowRight, Headphones } from "lucide-react";
 import type { NewsArticleData as NewsArticle } from "../../features/news/services/news";
 import { formatDate } from "../../utils/format-date";
 import { getYouTubeThumbnail, isDirectVideoFile } from "../../utils/video";
@@ -65,6 +65,11 @@ export function NewsCard({ article }: NewsCardProps) {
         {embedVideo && (
           <span className="absolute inset-0 flex items-center justify-center bg-slate-900/25 group-hover:bg-slate-900/35 transition-colors pointer-events-none">
             <PlayCircle size={44} className="text-white drop-shadow-lg" />
+          </span>
+        )}
+        {article.audioUrl && !article.videoUrl && (
+          <span className="absolute bottom-3 right-3 inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-900/70 text-white backdrop-blur-sm pointer-events-none">
+            <Headphones size={15} />
           </span>
         )}
       </CardMedia>

@@ -10,6 +10,7 @@ import {
   BookOpen,
   Image,
   Video,
+  Headphones,
   UploadCloud,
   Link2,
   X,
@@ -24,6 +25,13 @@ import { uploadFile } from "../../../lib/storage";
 // Must match the /submissions limits in storage.rules
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+const MAX_AUDIO_BYTES = 50 * 1024 * 1024;
+
+const MEDIA_TYPES = [
+  { type: "image", label: "Image", icon: Image },
+  { type: "video", label: "Video", icon: Video },
+  { type: "audio", label: "Audio", icon: Headphones },
+] as const;
 
 const CATEGORIES = [
   "Community",
@@ -45,7 +53,7 @@ interface FormState {
   category: string;
   excerpt: string;
   content: string;
-  mediaType: "image" | "video" | "";
+  mediaType: "image" | "video" | "audio" | "";
   mediaUrl: string;
 }
 
@@ -72,7 +80,7 @@ export function SubmitArticlePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [mediaSource, setMediaSource] = useState<"upload" | "url" | "">("");
-  // Images allow several files; videos only ever hold one
+  // Images allow several files; videos and audio only ever hold one
   const [mediaFiles, setMediaFiles] = useState<
     { file: File; previewUrl: string }[]
   >([]);
@@ -162,7 +170,12 @@ export function SubmitArticlePage() {
       mediaSource === "upload" && form.mediaType !== "" && mediaFiles.length > 0;
 
     if (uploading) {
-      const maxBytes = form.mediaType === "image" ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+      const maxBytes =
+        form.mediaType === "image"
+          ? MAX_IMAGE_BYTES
+          : form.mediaType === "video"
+            ? MAX_VIDEO_BYTES
+            : MAX_AUDIO_BYTES;
       const tooBig = mediaFiles.find((m) => m.file.size > maxBytes);
       if (tooBig) {
         setSubmitError(
@@ -181,7 +194,12 @@ export function SubmitArticlePage() {
         ? await Promise.all(
             mediaFiles.map(({ file }) => {
               const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
-              const folder = form.mediaType === "image" ? "images" : "videos";
+              const folder =
+                form.mediaType === "image"
+                  ? "images"
+                  : form.mediaType === "video"
+                    ? "videos"
+                    : "audio";
               return uploadFile(
                 file,
                 `submissions/${folder}/${crypto.randomUUID()}.${ext}`,
@@ -202,6 +220,12 @@ export function SubmitArticlePage() {
             ? uploadedUrls[0]
             : form.mediaUrl.trim() || undefined
           : undefined;
+      const resolvedAudioUrl =
+        form.mediaType === "audio"
+          ? mediaSource === "upload"
+            ? uploadedUrls[0]
+            : form.mediaUrl.trim() || undefined
+          : undefined;
 
       await addSubmission({
         title: form.title.trim(),
@@ -217,6 +241,7 @@ export function SubmitArticlePage() {
           imageUrls: resolvedImageUrls,
         }),
         ...(resolvedVideoUrl && { videoUrl: resolvedVideoUrl }),
+        ...(resolvedAudioUrl && { audioUrl: resolvedAudioUrl }),
       });
       setSubmitted(true);
       setForm(empty);
@@ -468,10 +493,9 @@ export function SubmitArticlePage() {
                 {t("submitArticle.mediaDesc")}
               </p>
 
-              {/* Image / Video type */}
-              <div className="flex gap-3">
-                {(["image", "video"] as const).map((type) => {
-                  const Icon = type === "image" ? Image : Video;
+              {/* Image / Video / Audio type */}
+              <div className="flex flex-wrap gap-3">
+                {MEDIA_TYPES.map(({ type, label, icon: Icon }) => {
                   const active = form.mediaType === type;
                   return (
                     <button
@@ -490,7 +514,7 @@ export function SubmitArticlePage() {
                       }`}
                     >
                       <Icon size={15} />
-                      {type === "image" ? "Image" : "Video"}
+                      {label}
                     </button>
                   );
                 })}
@@ -532,7 +556,7 @@ export function SubmitArticlePage() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept={form.mediaType === "image" ? "image/*" : "video/*"}
+                    accept={`${form.mediaType}/*`}
                     multiple={form.mediaType === "image"}
                     className="sr-only"
                     onChange={handleFileSelect}
@@ -553,12 +577,16 @@ export function SubmitArticlePage() {
                               {t("submitArticle.clickToSelect")}{" "}
                               {form.mediaType === "image"
                                 ? t("submitArticle.images")
-                                : t("submitArticle.aVideo")}
+                                : form.mediaType === "video"
+                                  ? t("submitArticle.aVideo")
+                                  : t("submitArticle.anAudio")}
                             </p>
                             <p className="text-xs mt-1 text-slate-400">
                               {form.mediaType === "image"
                                 ? t("submitArticle.imageFormats")
-                                : t("submitArticle.videoFormats")}
+                                : form.mediaType === "video"
+                                  ? t("submitArticle.videoFormats")
+                                  : t("submitArticle.audioFormats")}
                             </p>
                           </div>
                         </button>
@@ -604,6 +632,27 @@ export function SubmitArticlePage() {
                           <p className="text-xs text-slate-500">
                             {t("submitArticle.firstIsCover")}
                           </p>
+                        </div>
+                      ) : form.mediaType === "audio" ? (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                          <audio
+                            src={mediaFiles[0].previewUrl}
+                            controls
+                            className="w-full"
+                          />
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-slate-500 truncate max-w-xs">
+                              {mediaFiles[0].file.name}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => removeMediaFile(0)}
+                              aria-label={`Remove ${mediaFiles[0].file.name}`}
+                              className="ml-3 p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
@@ -692,17 +741,23 @@ export function SubmitArticlePage() {
                     </div>
                   )}
 
-                  {/* Video URL input */}
-                  {mediaSource === "url" && form.mediaType === "video" && (
+                  {/* Video / audio URL input */}
+                  {mediaSource === "url" && form.mediaType !== "image" && (
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                        {t("submitArticle.videoUrl")}
+                        {form.mediaType === "video"
+                          ? t("submitArticle.videoUrl")
+                          : t("submitArticle.audioUrl")}
                       </label>
                       <input
                         type="url"
                         value={form.mediaUrl}
                         onChange={(e) => set("mediaUrl", e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=…"
+                        placeholder={
+                          form.mediaType === "video"
+                            ? "https://www.youtube.com/watch?v=…"
+                            : "https://example.com/recording.mp3"
+                        }
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors"
                       />
                     </div>

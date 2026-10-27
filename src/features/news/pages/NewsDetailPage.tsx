@@ -2,7 +2,14 @@ import { useEffect, useMemo } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, User, Tag, Clock } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  User,
+  Tag,
+  Clock,
+  Headphones,
+} from "lucide-react";
 import { useNewsArticle, useNews } from "../hooks/useNews";
 import { NewsCard } from "../../../components/shared/NewsCard";
 import { MediaPlaceholder } from "../../../components/shared/MediaPlaceholder";
@@ -186,6 +193,23 @@ export function NewsDetailPage() {
           <div className="pb-8 mb-8 border-b border-slate-100">
             <ShareButtons title={article.title} />
           </div>
+
+          {/* Audio */}
+          {article.audioUrl && (
+            <div className="mb-8 rounded-2xl border border-sky-100 bg-sky-50 p-4 sm:p-5">
+              <p className="flex items-center gap-2 text-sm font-semibold text-sky-800 mb-3">
+                <Headphones size={16} />
+                {t("news.listen")}
+              </p>
+              <audio
+                src={article.audioUrl}
+                controls
+                controlsList="nodownload"
+                preload="metadata"
+                className="w-full"
+              />
+            </div>
+          )}
 
           {/* Content */}
           <ArticleBody text={article.content} />

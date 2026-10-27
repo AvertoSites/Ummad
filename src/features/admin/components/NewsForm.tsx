@@ -4,6 +4,7 @@ import { slugify } from "../../news/services/news";
 import type { NewsArticleData, NewsInput } from "../../news/services/news";
 import { MultiImageUpload } from "../../../components/MultiImageUpload";
 import { VideoUpload } from "../../../components/VideoUpload";
+import { AudioUpload } from "../../../components/AudioUpload";
 import { SegmentedToggle } from "../../../components/shared/SegmentedToggle";
 
 const CATEGORIES = [
@@ -51,6 +52,13 @@ export function NewsForm({
   // Detect whether the existing videoUrl is an uploaded file or a paste URL
   const [videoSource, setVideoSource] = useState<"url" | "upload">(
     initial?.videoUrl?.includes("firebasestorage.googleapis.com")
+      ? "upload"
+      : "url",
+  );
+  const [audioUrl, setAudioUrl] = useState(initial?.audioUrl ?? "");
+  const [audioSource, setAudioSource] = useState<"url" | "upload">(
+    !initial?.audioUrl ||
+      initial.audioUrl.includes("firebasestorage.googleapis.com")
       ? "upload"
       : "url",
   );
@@ -111,6 +119,7 @@ export function NewsForm({
         image: images[0],
         images,
         videoUrl: videoUrl.trim() || undefined,
+        audioUrl: audioUrl.trim() || undefined,
         tags: tags
           .split(",")
           .map((t) => t.trim())
@@ -268,7 +277,7 @@ export function NewsForm({
         optional
       />
 
-      {/* Video */}
+      {/* Video + Audio */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           {/* Video — toggle between URL paste and file upload */}
@@ -306,6 +315,46 @@ export function NewsForm({
               }
               storagePath="videos/news"
               onChange={setVideoUrl}
+              optional
+            />
+          )}
+        </div>
+        <div>
+          {/* Audio — toggle between URL paste and file upload */}
+          <div className="flex items-center justify-between mb-2">
+            <label className={lbl} style={{ marginBottom: 0 }}>
+              Audio
+              <span className="ml-1 font-normal text-slate-400 normal-case">
+                (optional)
+              </span>
+            </label>
+            <SegmentedToggle
+              aria-label="Audio source"
+              value={audioSource}
+              onChange={setAudioSource}
+              options={[
+                { value: "url", label: "URL" },
+                { value: "upload", label: "Upload" },
+              ]}
+            />
+          </div>
+          {audioSource === "url" ? (
+            <input
+              value={audioUrl}
+              onChange={(e) => setAudioUrl(e.target.value)}
+              placeholder="Direct link to an MP3 / M4A file"
+              className={inp}
+            />
+          ) : (
+            <AudioUpload
+              label=""
+              currentUrl={
+                audioUrl.includes("firebasestorage.googleapis.com")
+                  ? audioUrl
+                  : ""
+              }
+              storagePath="audio/news"
+              onChange={setAudioUrl}
               optional
             />
           )}

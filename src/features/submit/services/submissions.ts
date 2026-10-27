@@ -28,6 +28,7 @@ function toData(id: string, d: DocumentData): Submission {
     imageUrl: imageUrls[0],
     imageUrls,
     videoUrl: d.videoUrl ?? undefined,
+    audioUrl: d.audioUrl ?? undefined,
     authorName: d.authorName ?? "",
     authorEmail: d.authorEmail ?? "",
     chapterId: d.chapterId ?? "",

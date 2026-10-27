@@ -15,6 +15,7 @@ import {
   Lightbulb,
   ShoppingBag,
   PlayCircle,
+  Headphones,
   Star,
   Camera,
 } from "lucide-react";
@@ -202,6 +203,10 @@ function NewsTile({
             <div className="absolute inset-0 flex items-center justify-center bg-slate-900/25 group-hover:bg-slate-900/35 transition-colors pointer-events-none">
               <PlayCircle size={26} className="text-white drop-shadow-lg" />
             </div>
+          ) : article?.audioUrl ? (
+            <span className="absolute bottom-1.5 right-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-900/70 text-white backdrop-blur-sm pointer-events-none">
+              <Headphones size={11} />
+            </span>
           ) : null}
         </div>
         <div className="flex flex-col flex-1 p-2.5">

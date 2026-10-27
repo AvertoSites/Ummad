@@ -6,6 +6,7 @@ export interface NewsArticle {
   content: string;
   image: string;
   videoUrl?: string;
+  audioUrl?: string;
   author: string;
   publishedAt: string;
   category: string;

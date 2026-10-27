@@ -1303,6 +1303,7 @@ function SubmissionsQueue({
         image: sub.imageUrl,
         images: sub.imageUrls,
         videoUrl: sub.videoUrl,
+        audioUrl: sub.audioUrl,
         status: "published",
       });
       await updateStatus(sub.id, "approved");
@@ -1586,6 +1587,7 @@ function SubmissionsQueue({
                 image: editingSubmission.imageUrl,
                 images: editingSubmission.imageUrls ?? [],
                 videoUrl: editingSubmission.videoUrl,
+                audioUrl: editingSubmission.audioUrl,
                 author: editingSubmission.authorName,
                 authorEmail: editingSubmission.authorEmail,
                 category: editingSubmission.category,
