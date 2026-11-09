@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -24,6 +24,41 @@ const fadeUp = {
     transition: { duration: 0.45, delay: i * 0.08 },
   }),
 };
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0][0];
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (first + last).toUpperCase();
+}
+
+function LeaderAvatar({ name, photo }: { name: string; photo?: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (photo?.trim() && !failed) {
+    return (
+      <img
+        src={photo}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-2 border-sky-100"
+      />
+    );
+  }
+
+  return (
+    <div
+      role="img"
+      aria-label={name}
+      className="w-20 h-20 rounded-full mx-auto mb-3 border-2 border-sky-100 bg-gradient-to-br from-sky-600 to-sky-800 flex items-center justify-center"
+    >
+      <span className="text-white text-xl font-bold tracking-wide select-none">
+        {getInitials(name)}
+      </span>
+    </div>
+  );
+}
 
 export function ChapterDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -243,17 +278,23 @@ export function ChapterDetailPage() {
                     variants={fadeUp}
                     className="text-center"
                   >
-                    <img
-                      src={leader.photo}
-                      alt={leader.name}
-                      className="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-2 border-sky-100"
-                    />
+                    <LeaderAvatar name={leader.name} photo={leader.photo} />
                     <p className="font-semibold text-slate-900">
                       {leader.name}
                     </p>
                     <p className="text-xs text-sky-700 font-medium mb-1">
                       {leader.position}
                     </p>
+                    {leader.roles && leader.roles.length > 0 && (
+                      <ul className="text-xs text-slate-500 leading-relaxed mb-2 space-y-1 text-left inline-block">
+                        {leader.roles.map((role, r) => (
+                          <li key={r} className="flex gap-1.5">
+                            <span className="text-sky-600">•</span>
+                            <span>{role}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {leader.email && (
                       <a
                         href={`mailto:${leader.email}`}

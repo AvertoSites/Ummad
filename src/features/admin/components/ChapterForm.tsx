@@ -20,6 +20,7 @@ function emptyLeader(): LeaderData {
     id: crypto.randomUUID(),
     name: "",
     position: "",
+    roles: [""],
     photo: "",
     email: "",
   };
@@ -92,10 +93,25 @@ export function ChapterForm({ initial, onSubmit, onCancel }: ChapterFormProps) {
     setGoals((prev) => prev.filter((_, idx) => idx !== i));
 
   // ── Leader helpers
-  const updateLeader = (i: number, field: keyof LeaderData, val: string) =>
+  const updateLeader = (
+    i: number,
+    field: Exclude<keyof LeaderData, "roles">,
+    val: string,
+  ) =>
     setLeaders((prev) =>
       prev.map((l, idx) => (idx === i ? { ...l, [field]: val } : l)),
     );
+  const setLeaderRoles = (i: number, fn: (roles: string[]) => string[]) =>
+    setLeaders((prev) =>
+      prev.map((l, idx) =>
+        idx === i ? { ...l, roles: fn(l.roles?.length ? l.roles : [""]) } : l,
+      ),
+    );
+  const updateRole = (i: number, r: number, val: string) =>
+    setLeaderRoles(i, (roles) => roles.map((x, idx) => (idx === r ? val : x)));
+  const addRole = (i: number) => setLeaderRoles(i, (roles) => [...roles, ""]);
+  const removeRole = (i: number, r: number) =>
+    setLeaderRoles(i, (roles) => roles.filter((_, idx) => idx !== r));
   const addLeader = () => setLeaders((prev) => [...prev, emptyLeader()]);
   const removeLeader = (i: number) =>
     setLeaders((prev) => prev.filter((_, idx) => idx !== i));
@@ -137,6 +153,9 @@ export function ChapterForm({ initial, onSubmit, onCancel }: ChapterFormProps) {
         id: l.id || crypto.randomUUID(),
         name: l.name.trim(),
         position: l.position.trim(),
+        ...((l.roles ?? []).some((r) => r.trim()) && {
+          roles: (l.roles ?? []).map((r) => r.trim()).filter(Boolean),
+        }),
         ...(l.photo?.trim() && { photo: l.photo.trim() }),
         ...(l.email?.trim() && { email: l.email.trim() }),
       }));
@@ -210,9 +229,9 @@ export function ChapterForm({ initial, onSubmit, onCancel }: ChapterFormProps) {
             </label>
             <input
               value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              required
-              className={inputClass}
+              disabled
+              readOnly
+              className={`${inputClass} bg-slate-100 text-slate-500 cursor-not-allowed`}
               placeholder="ottawa-chapter"
             />
             <p className="mt-1 text-xs text-slate-400">
@@ -484,6 +503,48 @@ export function ChapterForm({ initial, onSubmit, onCancel }: ChapterFormProps) {
                     className={inputClass}
                     placeholder="e.g. Chapter President"
                   />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block mb-1 text-xs font-semibold text-slate-600">
+                    Roles{" "}
+                    <span className="text-slate-400 font-normal">
+                      (optional — what this person is responsible for)
+                    </span>
+                  </label>
+                  <div className="space-y-2">
+                    {(leader.roles?.length ? leader.roles : [""]).map(
+                      (role, r, all) => (
+                        <div key={r} className="flex gap-2">
+                          <input
+                            value={role}
+                            onChange={(e) => updateRole(i, r, e.target.value)}
+                            className={inputClass + " flex-1"}
+                            placeholder={
+                              r === 0
+                                ? "e.g. Oversees chapter programs"
+                                : `Role ${r + 1}`
+                            }
+                          />
+                          {all.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeRole(i, r)}
+                              className={removeBtn}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => addRole(i)}
+                    className={addRowBtn}
+                  >
+                    <Plus size={13} /> Add Role
+                  </button>
                 </div>
                 <div>
                   <ImageUpload

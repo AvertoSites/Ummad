@@ -85,9 +85,12 @@ body {
   background: inherit;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* In the base layer so Tailwind text-color utilities on links still win */
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 }
 
 button,

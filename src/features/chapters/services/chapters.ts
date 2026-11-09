@@ -17,6 +17,7 @@ export interface LeaderData {
   id: string;
   name: string;
   position: string;
+  roles?: string[]; // optional — list of responsibilities
   photo?: string; // optional — privacy
   email?: string;
 }
