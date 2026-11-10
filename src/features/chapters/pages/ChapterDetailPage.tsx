@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
-import { MapPin, Mail, Phone, ArrowLeft, CheckCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MapPin,
+  Mail,
+  Phone,
+  ArrowLeft,
+  CheckCircle,
+  ChevronDown,
+} from "lucide-react";
 import {
   FacebookIcon,
   TwitterIcon,
   InstagramIcon,
 } from "../../../components/shared/SocialIcons";
 import { useChapterBySlug } from "../hooks/useChapters";
+import type { LeaderData } from "../services/chapters";
 import { useNews } from "../../news/hooks/useNews";
 import { useEvents } from "../../events/hooks/useEvents";
 import { NewsCard } from "../../../components/shared/NewsCard";
@@ -42,7 +50,7 @@ function LeaderAvatar({ name, photo }: { name: string; photo?: string }) {
         src={photo}
         alt={name}
         onError={() => setFailed(true)}
-        className="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-2 border-sky-100"
+        className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-sky-100"
       />
     );
   }
@@ -51,12 +59,93 @@ function LeaderAvatar({ name, photo }: { name: string; photo?: string }) {
     <div
       role="img"
       aria-label={name}
-      className="w-20 h-20 rounded-full mx-auto mb-3 border-2 border-sky-100 bg-gradient-to-br from-sky-600 to-sky-800 flex items-center justify-center"
+      className="w-12 h-12 rounded-full flex-shrink-0 border-2 border-sky-100 bg-gradient-to-br from-sky-600 to-sky-800 flex items-center justify-center"
     >
-      <span className="text-white text-xl font-bold tracking-wide select-none">
+      <span className="text-white text-sm font-bold tracking-wide select-none">
         {getInitials(name)}
       </span>
     </div>
+  );
+}
+
+function LeaderRow({ leader }: { leader: LeaderData }) {
+  const [open, setOpen] = useState(false);
+  const roles = leader.roles?.filter((r) => r.trim()) ?? [];
+  const email = leader.email?.trim();
+  const hasDetails = roles.length > 0 || !!email;
+  const panelId = `leader-${leader.id}-details`;
+
+  const header = (
+    <>
+      <LeaderAvatar name={leader.name} photo={leader.photo} />
+      <div className="flex-1 min-w-0 text-left">
+        <p className="font-semibold text-slate-900 truncate">{leader.name}</p>
+        <p className="text-xs text-sky-700 font-medium truncate">
+          {leader.position}
+        </p>
+      </div>
+      {hasDetails && (
+        <ChevronDown
+          size={18}
+          className={`text-slate-400 flex-shrink-0 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      )}
+    </>
+  );
+
+  return (
+    <li className="border-b border-slate-100 last:border-b-0">
+      {hasDetails ? (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className="w-full flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors"
+        >
+          {header}
+        </button>
+      ) : (
+        <div className="flex items-center gap-4 px-4 py-3">{header}</div>
+      )}
+
+      <AnimatePresence initial={false}>
+        {hasDetails && open && (
+          <motion.div
+            id={panelId}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="pl-20 pr-4 pb-4 space-y-3">
+              {roles.length > 0 && (
+                <ul className="text-sm text-slate-600 leading-relaxed space-y-1">
+                  {roles.map((role, r) => (
+                    <li key={r} className="flex gap-2">
+                      <span className="text-sky-600">•</span>
+                      <span>{role}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {email && (
+                <a
+                  href={`mailto:${email}`}
+                  className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-sky-700 transition-colors break-all"
+                >
+                  <Mail size={14} className="flex-shrink-0" />
+                  {email}
+                </a>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </li>
   );
 }
 
@@ -267,45 +356,11 @@ export function ChapterDetailPage() {
               <h2 className="text-2xl font-extrabold text-slate-900 mb-6 pb-3 border-b border-slate-100">
                 {t("chapterDetail.leadership")}
               </h2>
-              <div className="grid sm:grid-cols-3 gap-6">
-                {chapter.leadership.map((leader, i) => (
-                  <motion.div
-                    key={leader.id}
-                    custom={i}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                    variants={fadeUp}
-                    className="text-center"
-                  >
-                    <LeaderAvatar name={leader.name} photo={leader.photo} />
-                    <p className="font-semibold text-slate-900">
-                      {leader.name}
-                    </p>
-                    <p className="text-xs text-sky-700 font-medium mb-1">
-                      {leader.position}
-                    </p>
-                    {leader.roles && leader.roles.length > 0 && (
-                      <ul className="text-xs text-slate-500 leading-relaxed mb-2 space-y-1 text-left inline-block">
-                        {leader.roles.map((role, r) => (
-                          <li key={r} className="flex gap-1.5">
-                            <span className="text-sky-600">•</span>
-                            <span>{role}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {leader.email && (
-                      <a
-                        href={`mailto:${leader.email}`}
-                        className="text-xs text-slate-400 hover:text-sky-700 transition-colors"
-                      >
-                        {leader.email}
-                      </a>
-                    )}
-                  </motion.div>
+              <ul className="rounded-xl border border-slate-100 shadow-sm overflow-hidden bg-white">
+                {chapter.leadership.map((leader) => (
+                  <LeaderRow key={leader.id} leader={leader} />
                 ))}
-              </div>
+              </ul>
             </motion.section>
 
             {/* Chapter News */}
